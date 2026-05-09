@@ -41,6 +41,18 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void OrphanedDuplicateException은_ORPHANED_DUPLICATE로_응답한다() {
+        ResponseEntity<Object> actual = handler.handleOrphanedDuplicateException();
+
+        assertAll(
+                () -> assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR),
+                () -> assertThat(actual.getBody()).isEqualTo(
+                        new ExceptionResponse("ORPHANED_DUPLICATE", "알림 등록 처리에 실패했습니다.")
+                )
+        );
+    }
+
+    @Test
     void 알_수_없는_예외는_INTERNAL_ERROR로_응답한다() {
         ResponseEntity<Object> actual = handler.handleException();
 

@@ -1,5 +1,6 @@
 package com.hyso.notifier.global.error;
 
+import com.hyso.notifier.infrastructure.notification.exception.OrphanedDuplicateException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -38,6 +39,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Object> handleIllegalArgumentException(IllegalArgumentException exception) {
         return createResponseEntity(CommonErrorCode.INVALID_INPUT, exception.getMessage());
+    }
+
+    @ExceptionHandler(OrphanedDuplicateException.class)
+    public ResponseEntity<Object> handleOrphanedDuplicateException() {
+        return createResponseEntity(NotificationErrorCode.ORPHANED_DUPLICATE);
     }
 
     @ExceptionHandler(IllegalStateException.class)
