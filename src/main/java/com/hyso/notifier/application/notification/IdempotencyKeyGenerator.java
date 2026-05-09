@@ -1,7 +1,7 @@
 package com.hyso.notifier.application.notification;
 
-import com.hyso.notifier.infrastructure.notification.NotificationChannel;
-import com.hyso.notifier.infrastructure.notification.NotificationType;
+import com.hyso.notifier.domain.notification.NotificationChannel;
+import com.hyso.notifier.domain.notification.NotificationType;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;

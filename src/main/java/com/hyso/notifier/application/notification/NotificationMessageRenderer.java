@@ -1,6 +1,6 @@
 package com.hyso.notifier.application.notification;
 
-import com.hyso.notifier.infrastructure.notification.NotificationType;
+import com.hyso.notifier.domain.notification.NotificationType;
 import org.springframework.stereotype.Component;
 
 @Component

@@ -1,4 +1,4 @@
-package com.hyso.notifier.infrastructure.notification;
+package com.hyso.notifier.domain.notification;
 
 public enum NotificationType {
 	ENROLLMENT_COMPLETED,
