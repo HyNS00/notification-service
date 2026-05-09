@@ -65,26 +65,29 @@ class IdempotencyKeyGeneratorTest {
     }
 
     @Test
-    void 각_필드가_null이면_필드명을_담은_NPE를_던진다() {
+    void 각_필드가_비어있으면_IllegalArgumentException을_던진다() {
         NotificationType type = NotificationType.ENROLLMENT_COMPLETED;
         NotificationChannel channel = NotificationChannel.EMAIL;
 
         assertAll(
                 () -> assertThatThrownBy(() -> generator.generate(null, type, "ENROLLMENT", 100L, channel))
-                        .isInstanceOf(NullPointerException.class)
-                        .hasMessage("receiverId"),
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessage("수신자 ID 는 비어 있을 수 없습니다."),
                 () -> assertThatThrownBy(() -> generator.generate(1L, null, "ENROLLMENT", 100L, channel))
-                        .isInstanceOf(NullPointerException.class)
-                        .hasMessage("type"),
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessage("알림 타입은 비어 있을 수 없습니다."),
                 () -> assertThatThrownBy(() -> generator.generate(1L, type, null, 100L, channel))
-                        .isInstanceOf(NullPointerException.class)
-                        .hasMessage("refType"),
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessage("참조 타입은 비어 있을 수 없습니다."),
+                () -> assertThatThrownBy(() -> generator.generate(1L, type, " ", 100L, channel))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessage("참조 타입은 비어 있을 수 없습니다."),
                 () -> assertThatThrownBy(() -> generator.generate(1L, type, "ENROLLMENT", null, channel))
-                        .isInstanceOf(NullPointerException.class)
-                        .hasMessage("refId"),
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessage("참조 ID 는 비어 있을 수 없습니다."),
                 () -> assertThatThrownBy(() -> generator.generate(1L, type, "ENROLLMENT", 100L, null))
-                        .isInstanceOf(NullPointerException.class)
-                        .hasMessage("channel")
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessage("발송 채널은 비어 있을 수 없습니다.")
         );
     }
 }

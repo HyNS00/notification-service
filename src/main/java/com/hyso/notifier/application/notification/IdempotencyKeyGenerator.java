@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
-import java.util.Objects;
 
 @Component
 public class IdempotencyKeyGenerator {
@@ -20,11 +19,7 @@ public class IdempotencyKeyGenerator {
 			Long refId,
 			NotificationChannel channel
 	) {
-		Objects.requireNonNull(receiverId, "receiverId");
-		Objects.requireNonNull(type, "type");
-		Objects.requireNonNull(refType, "refType");
-		Objects.requireNonNull(refId, "refId");
-		Objects.requireNonNull(channel, "channel");
+		validate(receiverId, type, refType, refId, channel);
 
 		String raw = "%d|%s|%s|%d|%s".formatted(
 				receiverId,
@@ -34,6 +29,50 @@ public class IdempotencyKeyGenerator {
 				channel.name()
 		);
 		return HexFormat.of().formatHex(sha256(raw));
+	}
+
+	private void validate(
+			Long receiverId,
+			NotificationType type,
+			String refType,
+			Long refId,
+			NotificationChannel channel
+	) {
+		validateReceiverId(receiverId);
+		validateType(type);
+		validateRefType(refType);
+		validateRefId(refId);
+		validateChannel(channel);
+	}
+
+	private void validateReceiverId(Long receiverId) {
+		if (receiverId == null) {
+			throw new IllegalArgumentException("수신자 ID 는 비어 있을 수 없습니다.");
+		}
+	}
+
+	private void validateType(NotificationType type) {
+		if (type == null) {
+			throw new IllegalArgumentException("알림 타입은 비어 있을 수 없습니다.");
+		}
+	}
+
+	private void validateRefType(String refType) {
+		if (refType == null || refType.isBlank()) {
+			throw new IllegalArgumentException("참조 타입은 비어 있을 수 없습니다.");
+		}
+	}
+
+	private void validateRefId(Long refId) {
+		if (refId == null) {
+			throw new IllegalArgumentException("참조 ID 는 비어 있을 수 없습니다.");
+		}
+	}
+
+	private void validateChannel(NotificationChannel channel) {
+		if (channel == null) {
+			throw new IllegalArgumentException("발송 채널은 비어 있을 수 없습니다.");
+		}
 	}
 
 	private static byte[] sha256(String input) {
