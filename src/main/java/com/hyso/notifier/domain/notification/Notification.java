@@ -18,9 +18,9 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(
-        name = "notification",
+        name = "notifications",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_notification_idem", columnNames = "idempotency_key")
+                @UniqueConstraint(name = "uk_notifications_idem", columnNames = "idempotency_key")
         }
 )
 @Getter
