@@ -4,6 +4,8 @@ import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDateTime;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -12,9 +14,11 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class NotificationTest {
 
+    private static final LocalDateTime CREATED_AT = LocalDateTime.of(2026, 5, 9, 10, 0);
+
     @Test
     void 알림을_생성한다() {
-        Notification actual = Notification.create(
+        Notification actual = createNotification(
                 1L,
                 NotificationType.ENROLLMENT_COMPLETED,
                 NotificationChannel.EMAIL,
@@ -35,13 +39,14 @@ class NotificationTest {
                 () -> assertThat(actual.getSentAt()).isNull(),
                 () -> assertThat(actual.getFailedAt()).isNull(),
                 () -> assertThat(actual.getFailureReason()).isNull(),
-                () -> assertThat(actual.getReadAt()).isNull()
+                () -> assertThat(actual.getReadAt()).isNull(),
+                () -> assertThat(actual.getCreatedAt()).isEqualTo(CREATED_AT)
         );
     }
 
     @Test
     void receiverId가_비어있으면_알림을_생성할_수_없다() {
-        assertThatThrownBy(() -> Notification.create(
+        assertThatThrownBy(() -> createNotification(
                 null,
                 NotificationType.ENROLLMENT_COMPLETED,
                 NotificationChannel.EMAIL,
@@ -56,7 +61,7 @@ class NotificationTest {
 
     @Test
     void type이_비어있으면_알림을_생성할_수_없다() {
-        assertThatThrownBy(() -> Notification.create(
+        assertThatThrownBy(() -> createNotification(
                 1L,
                 null,
                 NotificationChannel.EMAIL,
@@ -71,7 +76,7 @@ class NotificationTest {
 
     @Test
     void channel이_비어있으면_알림을_생성할_수_없다() {
-        assertThatThrownBy(() -> Notification.create(
+        assertThatThrownBy(() -> createNotification(
                 1L,
                 NotificationType.ENROLLMENT_COMPLETED,
                 null,
@@ -86,7 +91,7 @@ class NotificationTest {
 
     @Test
     void refType이_null이면_알림을_생성할_수_없다() {
-        assertThatThrownBy(() -> Notification.create(
+        assertThatThrownBy(() -> createNotification(
                 1L,
                 NotificationType.ENROLLMENT_COMPLETED,
                 NotificationChannel.EMAIL,
@@ -101,7 +106,7 @@ class NotificationTest {
 
     @Test
     void refType이_공백이면_알림을_생성할_수_없다() {
-        assertThatThrownBy(() -> Notification.create(
+        assertThatThrownBy(() -> createNotification(
                 1L,
                 NotificationType.ENROLLMENT_COMPLETED,
                 NotificationChannel.EMAIL,
@@ -116,7 +121,7 @@ class NotificationTest {
 
     @Test
     void refType이_64자를_넘으면_알림을_생성할_수_없다() {
-        assertThatThrownBy(() -> Notification.create(
+        assertThatThrownBy(() -> createNotification(
                 1L,
                 NotificationType.ENROLLMENT_COMPLETED,
                 NotificationChannel.EMAIL,
@@ -131,7 +136,7 @@ class NotificationTest {
 
     @Test
     void refId가_비어있으면_알림을_생성할_수_없다() {
-        assertThatThrownBy(() -> Notification.create(
+        assertThatThrownBy(() -> createNotification(
                 1L,
                 NotificationType.ENROLLMENT_COMPLETED,
                 NotificationChannel.EMAIL,
@@ -146,7 +151,7 @@ class NotificationTest {
 
     @Test
     void body가_null이면_알림을_생성할_수_없다() {
-        assertThatThrownBy(() -> Notification.create(
+        assertThatThrownBy(() -> createNotification(
                 1L,
                 NotificationType.ENROLLMENT_COMPLETED,
                 NotificationChannel.EMAIL,
@@ -161,7 +166,7 @@ class NotificationTest {
 
     @Test
     void body가_공백이면_알림을_생성할_수_없다() {
-        assertThatThrownBy(() -> Notification.create(
+        assertThatThrownBy(() -> createNotification(
                 1L,
                 NotificationType.ENROLLMENT_COMPLETED,
                 NotificationChannel.EMAIL,
@@ -176,7 +181,7 @@ class NotificationTest {
 
     @Test
     void body가_500자를_넘으면_알림을_생성할_수_없다() {
-        assertThatThrownBy(() -> Notification.create(
+        assertThatThrownBy(() -> createNotification(
                 1L,
                 NotificationType.ENROLLMENT_COMPLETED,
                 NotificationChannel.EMAIL,
@@ -191,7 +196,7 @@ class NotificationTest {
 
     @Test
     void idempotencyKey가_null이면_알림을_생성할_수_없다() {
-        assertThatThrownBy(() -> Notification.create(
+        assertThatThrownBy(() -> createNotification(
                 1L,
                 NotificationType.ENROLLMENT_COMPLETED,
                 NotificationChannel.EMAIL,
@@ -206,7 +211,7 @@ class NotificationTest {
 
     @Test
     void idempotencyKey가_공백이면_알림을_생성할_수_없다() {
-        assertThatThrownBy(() -> Notification.create(
+        assertThatThrownBy(() -> createNotification(
                 1L,
                 NotificationType.ENROLLMENT_COMPLETED,
                 NotificationChannel.EMAIL,
@@ -221,7 +226,7 @@ class NotificationTest {
 
     @Test
     void idempotencyKey가_64자를_넘으면_알림을_생성할_수_없다() {
-        assertThatThrownBy(() -> Notification.create(
+        assertThatThrownBy(() -> createNotification(
                 1L,
                 NotificationType.ENROLLMENT_COMPLETED,
                 NotificationChannel.EMAIL,
@@ -232,6 +237,34 @@ class NotificationTest {
         ))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("멱등성 키는 64자를 넘을 수 없습니다.");
+    }
+
+    @Test
+    void createdAt이_비어있으면_알림을_생성할_수_없다() {
+        assertThatThrownBy(() -> Notification.create(
+                1L,
+                NotificationType.ENROLLMENT_COMPLETED,
+                NotificationChannel.EMAIL,
+                "ENROLLMENT",
+                100L,
+                "수강 신청이 완료되었습니다.",
+                idempotencyKey(),
+                null
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("생성 시각은 비어 있을 수 없습니다.");
+    }
+
+    private Notification createNotification(
+            Long receiverId,
+            NotificationType type,
+            NotificationChannel channel,
+            String refType,
+            Long refId,
+            String body,
+            String idempotencyKey
+    ) {
+        return Notification.create(receiverId, type, channel, refType, refId, body, idempotencyKey, CREATED_AT);
     }
 
     private String idempotencyKey() {

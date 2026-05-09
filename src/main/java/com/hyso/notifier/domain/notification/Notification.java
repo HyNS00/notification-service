@@ -7,7 +7,6 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
@@ -76,7 +75,8 @@ public class Notification {
             String refType,
             Long refId,
             String body,
-            String idempotencyKey
+            String idempotencyKey,
+            LocalDateTime createdAt
     ) {
         this.receiverId = receiverId;
         this.type = type;
@@ -85,6 +85,7 @@ public class Notification {
         this.refId = refId;
         this.body = body;
         this.idempotencyKey = idempotencyKey;
+        this.createdAt = createdAt;
     }
 
     public static Notification create(
@@ -94,17 +95,11 @@ public class Notification {
             String refType,
             Long refId,
             String body,
-            String idempotencyKey
+            String idempotencyKey,
+            LocalDateTime createdAt
     ) {
-        validate(receiverId, type, channel, refType, refId, body, idempotencyKey);
-        return new Notification(receiverId, type, channel, refType, refId, body, idempotencyKey);
-    }
-
-    @PrePersist
-    private void onCreate() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
+        validate(receiverId, type, channel, refType, refId, body, idempotencyKey, createdAt);
+        return new Notification(receiverId, type, channel, refType, refId, body, idempotencyKey, createdAt);
     }
 
     private static void validate(
@@ -114,7 +109,8 @@ public class Notification {
             String refType,
             Long refId,
             String body,
-            String idempotencyKey
+            String idempotencyKey,
+            LocalDateTime createdAt
     ) {
         validateReceiverId(receiverId);
         validateType(type);
@@ -123,6 +119,7 @@ public class Notification {
         validateRefId(refId);
         validateBody(body);
         validateIdempotencyKey(idempotencyKey);
+        validateCreatedAt(createdAt);
     }
 
     private static void validateReceiverId(Long receiverId) {
@@ -173,6 +170,12 @@ public class Notification {
         }
         if (idempotencyKey.length() > 64) {
             throw new IllegalArgumentException("멱등성 키는 64자를 넘을 수 없습니다.");
+        }
+    }
+
+    private static void validateCreatedAt(LocalDateTime createdAt) {
+        if (createdAt == null) {
+            throw new IllegalArgumentException("생성 시각은 비어 있을 수 없습니다.");
         }
     }
 }

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.jdbc.Sql;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,6 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 @SuppressWarnings("NonAsciiCharacters")
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class NotificationRepositoryAdapterTest {
+
+    private static final LocalDateTime CREATED_AT = LocalDateTime.of(2026, 5, 9, 10, 0);
 
     @Autowired
     NotificationRepositoryAdapter notificationRepositoryAdapter;
@@ -37,7 +40,8 @@ class NotificationRepositoryAdapterTest {
                 () -> assertThat(actual.getRefType()).isEqualTo("ENROLLMENT"),
                 () -> assertThat(actual.getRefId()).isEqualTo(100L),
                 () -> assertThat(actual.getBody()).isEqualTo("수강 신청이 완료되었습니다."),
-                () -> assertThat(actual.getIdempotencyKey()).isEqualTo(idempotencyKey("a"))
+                () -> assertThat(actual.getIdempotencyKey()).isEqualTo(idempotencyKey("a")),
+                () -> assertThat(actual.getCreatedAt()).isEqualTo(CREATED_AT)
         );
     }
 
@@ -67,7 +71,8 @@ class NotificationRepositoryAdapterTest {
                 "ENROLLMENT",
                 100L,
                 "수강 신청이 완료되었습니다.",
-                idempotencyKey
+                idempotencyKey,
+                CREATED_AT
         );
     }
 
