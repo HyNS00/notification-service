@@ -8,5 +8,7 @@ public interface NotificationRepository {
 
     Notification save(Notification notification);
 
+    NotificationSaveResult saveOrFind(Notification notification);
+
     Optional<Notification> findByIdempotencyKey(String idempotencyKey);
 }

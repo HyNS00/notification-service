@@ -4,6 +4,7 @@ import com.hyso.notifier.application.IntegrationTest;
 import com.hyso.notifier.domain.notification.Notification;
 import com.hyso.notifier.domain.notification.NotificationChannel;
 import com.hyso.notifier.domain.notification.NotificationType;
+import com.hyso.notifier.domain.notification.repository.NotificationSaveResult;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Test;
@@ -61,6 +62,34 @@ class NotificationRepositoryAdapterTest {
         Optional<Notification> actual = notificationRepositoryAdapter.findByIdempotencyKey(idempotencyKey("c"));
 
         assertThat(actual).isEmpty();
+    }
+
+    @Test
+    void saveOrFind는_새_알림을_저장하고_created_결과를_반환한다() {
+        String idempotencyKey = idempotencyKey("a");
+
+        NotificationSaveResult actual = notificationRepositoryAdapter.saveOrFind(notification(idempotencyKey));
+
+        assertAll(
+                () -> assertThat(actual.created()).isTrue(),
+                () -> assertThat(actual.notification().getId()).isNotNull(),
+                () -> assertThat(actual.notification().getIdempotencyKey()).isEqualTo(idempotencyKey),
+                () -> assertThat(notificationRepositoryAdapter.findByIdempotencyKey(idempotencyKey)).isPresent()
+        );
+    }
+
+    @Sql("/sql/notification/insert_notification.sql")
+    @Test
+    void saveOrFind는_중복_알림이면_기존_알림과_existing_결과를_반환한다() {
+        String idempotencyKey = "c43f82d4a0f6c91a5b2e7d8f9340ab1e6c5d2f8a7b9e0134d6a2c8f5e1b9073d";
+
+        NotificationSaveResult actual = notificationRepositoryAdapter.saveOrFind(notification(idempotencyKey));
+
+        assertAll(
+                () -> assertThat(actual.created()).isFalse(),
+                () -> assertThat(actual.notification().getId()).isEqualTo(1L),
+                () -> assertThat(actual.notification().getIdempotencyKey()).isEqualTo(idempotencyKey)
+        );
     }
 
     private Notification notification(String idempotencyKey) {

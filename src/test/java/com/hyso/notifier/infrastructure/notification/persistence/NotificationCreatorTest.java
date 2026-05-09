@@ -44,12 +44,12 @@ class NotificationCreatorTest {
     void 알림과_아웃박스를_같은_멱등성_키로_저장한다() {
         String idempotencyKey = idempotencyKey("a");
 
-        Long notificationId = notificationCreator.saveNew(notification(idempotencyKey), CREATED_AT);
+        Notification created = notificationCreator.saveNew(notification(idempotencyKey));
 
         Notification savedNotification = notificationRepository.findByIdempotencyKey(idempotencyKey).orElseThrow();
         NotificationOutbox savedOutbox = notificationOutboxRepository.findByIdempotencyKey(idempotencyKey).orElseThrow();
         assertAll(
-                () -> assertThat(notificationId).isEqualTo(savedNotification.getId()),
+                () -> assertThat(created.getId()).isEqualTo(savedNotification.getId()),
                 () -> assertThat(savedOutbox.getNotificationId()).isEqualTo(savedNotification.getId()),
                 () -> assertThat(savedOutbox.getIdempotencyKey()).isEqualTo(savedNotification.getIdempotencyKey()),
                 () -> assertThat(savedOutbox.getReceiverId()).isEqualTo(savedNotification.getReceiverId()),
@@ -67,7 +67,7 @@ class NotificationCreatorTest {
     @Sql("/sql/notification/insert_notification.sql")
     @Test
     void 같은_멱등성_키로_saveNew를_호출하면_unique_예외가_발생한다() {
-        assertThatThrownBy(() -> notificationCreator.saveNew(notification(EXISTING_IDEMPOTENCY_KEY), CREATED_AT))
+        assertThatThrownBy(() -> notificationCreator.saveNew(notification(EXISTING_IDEMPOTENCY_KEY)))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
