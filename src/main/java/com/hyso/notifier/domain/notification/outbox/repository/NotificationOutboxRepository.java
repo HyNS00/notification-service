@@ -13,4 +13,6 @@ public interface NotificationOutboxRepository {
     Optional<NotificationOutbox> findByIdempotencyKey(String idempotencyKey);
 
     List<NotificationOutbox> findClaimableForUpdate(LocalDateTime now, int batchSize);
+
+    boolean saveIfLeaseMatched(NotificationOutbox outbox, LocalDateTime claimedProcessingStartedAt);
 }
