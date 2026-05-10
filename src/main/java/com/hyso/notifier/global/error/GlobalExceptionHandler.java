@@ -1,5 +1,6 @@
 package com.hyso.notifier.global.error;
 
+import com.hyso.notifier.application.notification.outbox.exception.UnsupportedDispatchChannelException;
 import com.hyso.notifier.infrastructure.notification.exception.OrphanedDuplicateException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
@@ -66,6 +67,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(OrphanedDuplicateException.class)
     public ResponseEntity<Object> handleOrphanedDuplicateException() {
         return createResponseEntity(NotificationErrorCode.ORPHANED_DUPLICATE);
+    }
+
+    @ExceptionHandler(UnsupportedDispatchChannelException.class)
+    public ResponseEntity<Object> handleUnsupportedDispatchChannelException() {
+        return createResponseEntity(NotificationErrorCode.UNSUPPORTED_DISPATCH_CHANNEL);
     }
 
     @ExceptionHandler(IllegalStateException.class)

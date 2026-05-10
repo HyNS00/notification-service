@@ -6,7 +6,8 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum NotificationErrorCode implements ErrorCode {
 
-    ORPHANED_DUPLICATE("ORPHANED_DUPLICATE", "알림 등록 처리에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
+    ORPHANED_DUPLICATE("ORPHANED_DUPLICATE", "알림 등록 처리에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+    UNSUPPORTED_DISPATCH_CHANNEL("UNSUPPORTED_DISPATCH_CHANNEL", "발송 채널을 처리할 수 없습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final String errorCode;
     private final String message;

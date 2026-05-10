@@ -53,6 +53,18 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void UnsupportedDispatchChannelException은_UNSUPPORTED_DISPATCH_CHANNEL로_응답한다() {
+        ResponseEntity<Object> actual = handler.handleUnsupportedDispatchChannelException();
+
+        assertAll(
+                () -> assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR),
+                () -> assertThat(actual.getBody()).isEqualTo(
+                        new ExceptionResponse("UNSUPPORTED_DISPATCH_CHANNEL", "발송 채널을 처리할 수 없습니다.")
+                )
+        );
+    }
+
+    @Test
     void 알_수_없는_예외는_INTERNAL_ERROR로_응답한다() {
         ResponseEntity<Object> actual = handler.handleException();
 
