@@ -3,3 +3,27 @@ spring:
     name: notifier
   profiles:
     default: local
+
+
+outbox:
+  worker:
+    batch-size: 10
+    poll-min-delay-ms: 100
+    poll-max-delay-ms: 5000
+    poll-multiplier: 2
+    poll-jitter-ratio: 0.2
+  retry:
+    max-attempts: 5
+    base-delay-ms: 5000
+    multiplier: 2
+    max-delay-ms: 300000
+    jitter-ratio: 0.2
+  recovery:
+    lease-timeout-ms: 60000
+    fixed-delay-ms: 30000
+    batch-size: 100
+  cleanup:
+    sent-retention-days: 7
+    failed-retention-days: 30
+    fixed-delay-ms: 3600000
+    batch-size: 500
