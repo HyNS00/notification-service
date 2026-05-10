@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS notification_outboxes (
     processing_attempt INT NOT NULL,
     processing_lease_state VARCHAR(16) NOT NULL,
     processing_started_at TIMESTAMP,
+    next_attempt_at TIMESTAMP,
     receiver_id BIGINT NOT NULL,
     channel VARCHAR(16) NOT NULL,
     body VARCHAR(500) NOT NULL,
@@ -34,3 +35,6 @@ CREATE TABLE IF NOT EXISTS notification_outboxes (
     CONSTRAINT uk_notification_outboxes_notification UNIQUE (notification_id),
     CONSTRAINT uk_notification_outboxes_idem UNIQUE (idempotency_key)
 );
+
+CREATE INDEX IF NOT EXISTS idx_outbox_status_next_attempt
+    ON notification_outboxes (status, next_attempt_at, id);

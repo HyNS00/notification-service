@@ -92,6 +92,41 @@ class NotificationRepositoryAdapterTest {
         );
     }
 
+    @Sql("/sql/notification/insert_notification.sql")
+    @Test
+    void markSent_는_알림의_sent_at_을_갱신한다() {
+        LocalDateTime sentAt = LocalDateTime.of(2026, 5, 11, 12, 0);
+
+        notificationRepositoryAdapter.markSent(1L, sentAt);
+
+        Notification updated = notificationRepositoryAdapter.findByIdempotencyKey(
+                "c43f82d4a0f6c91a5b2e7d8f9340ab1e6c5d2f8a7b9e0134d6a2c8f5e1b9073d"
+        ).orElseThrow();
+        assertAll(
+                () -> assertThat(updated.getSentAt()).isEqualTo(sentAt),
+                () -> assertThat(updated.getFailedAt()).isNull(),
+                () -> assertThat(updated.getFailureReason()).isNull()
+        );
+    }
+
+    @Sql("/sql/notification/insert_notification.sql")
+    @Test
+    void markFailed_는_알림의_failed_at_과_failure_reason_을_갱신한다() {
+        LocalDateTime failedAt = LocalDateTime.of(2026, 5, 11, 12, 0);
+        String reason = "lease timeout";
+
+        notificationRepositoryAdapter.markFailed(1L, failedAt, reason);
+
+        Notification updated = notificationRepositoryAdapter.findByIdempotencyKey(
+                "c43f82d4a0f6c91a5b2e7d8f9340ab1e6c5d2f8a7b9e0134d6a2c8f5e1b9073d"
+        ).orElseThrow();
+        assertAll(
+                () -> assertThat(updated.getFailedAt()).isEqualTo(failedAt),
+                () -> assertThat(updated.getFailureReason()).isEqualTo(reason),
+                () -> assertThat(updated.getSentAt()).isNull()
+        );
+    }
+
     private Notification notification(String idempotencyKey) {
         return Notification.create(
                 1L,
