@@ -13,5 +13,7 @@ spring:
       schema-locations: classpath:sql/schema.sql
 
 outbox:
+  scheduling:
+    enabled: false
   worker:
     auto-start: false

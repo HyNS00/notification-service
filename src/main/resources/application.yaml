@@ -6,6 +6,8 @@ spring:
 
 
 outbox:
+  scheduling:
+    enabled: true
   worker:
     auto-start: true
     batch-size: 10
