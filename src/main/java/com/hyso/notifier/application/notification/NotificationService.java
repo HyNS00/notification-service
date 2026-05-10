@@ -6,7 +6,6 @@ import com.hyso.notifier.domain.notification.repository.NotificationSaveResult;
 import com.hyso.notifier.presentation.notification.dto.request.CreateNotificationRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -20,7 +19,6 @@ public class NotificationService {
     private final NotificationMessageRenderer notificationMessageRenderer;
     private final NotificationRepository notificationRepository;
 
-    @Transactional
     public RegisterNotificationResult register(CreateNotificationRequest request) {
         String idempotencyKey = createIdempotencyKey(request);
         String body = notificationMessageRenderer.render(request.type());
