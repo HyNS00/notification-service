@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -23,5 +25,10 @@ public class NotificationOutboxRepositoryAdapter implements NotificationOutboxRe
     @Transactional(readOnly = true)
     public Optional<NotificationOutbox> findByIdempotencyKey(String idempotencyKey) {
         return jpaNotificationOutboxRepository.findByIdempotencyKey(idempotencyKey);
+    }
+
+    @Override
+    public List<NotificationOutbox> findClaimableForUpdate(LocalDateTime now, int batchSize) {
+        return jpaNotificationOutboxRepository.findClaimableForUpdate(now, batchSize);
     }
 }
