@@ -1,3 +1,5 @@
 spring:
   application:
     name: notifier
+  profiles:
+    default: local
