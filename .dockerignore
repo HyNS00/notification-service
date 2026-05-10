@@ -1,0 +1,25 @@
+# git
+.git/
+.gitignore
+.gitattributes
+
+# gradle / build artifacts
+build/
+.gradle/
+out/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# project (빌드에 불필요)
+.claude/
+docs/
+README.md
+CLAUDE.md
+*.log

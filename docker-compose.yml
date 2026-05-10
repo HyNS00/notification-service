@@ -1,0 +1,40 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: notifier-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: notifier
+      MYSQL_USER: notifier
+      MYSQL_PASSWORD: notifier
+    ports:
+      - "${MYSQL_HOST_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "notifier", "-pnotifier"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: notifier-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      DB_URL: jdbc:mysql://mysql:3306/notifier?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+      DB_USERNAME: notifier
+      DB_PASSWORD: notifier
+    ports:
+      - "8080:8080"
+
+volumes:
+  mysql-data:
