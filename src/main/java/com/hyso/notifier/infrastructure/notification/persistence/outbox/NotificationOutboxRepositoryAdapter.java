@@ -75,4 +75,27 @@ public class NotificationOutboxRepositoryAdapter implements NotificationOutboxRe
             throw new IllegalArgumentException("claim 시각은 비어 있을 수 없습니다.");
         }
     }
+
+    @Override
+    @Transactional
+    public int deleteSentOlderThan(LocalDateTime cutoff, int batchSize) {
+        validateCleanupArgs(cutoff, batchSize);
+        return jpaNotificationOutboxRepository.deleteSentOlderThan(cutoff, batchSize);
+    }
+
+    @Override
+    @Transactional
+    public int deleteFailedOlderThan(LocalDateTime cutoff, int batchSize) {
+        validateCleanupArgs(cutoff, batchSize);
+        return jpaNotificationOutboxRepository.deleteFailedOlderThan(cutoff, batchSize);
+    }
+
+    private static void validateCleanupArgs(LocalDateTime cutoff, int batchSize) {
+        if (cutoff == null) {
+            throw new IllegalArgumentException("cleanup cutoff 시각은 비어 있을 수 없습니다.");
+        }
+        if (batchSize < 1) {
+            throw new IllegalArgumentException("cleanup batch 크기는 1 이상이어야 합니다.");
+        }
+    }
 }

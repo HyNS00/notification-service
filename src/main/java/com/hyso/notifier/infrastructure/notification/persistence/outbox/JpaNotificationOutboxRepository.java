@@ -79,4 +79,28 @@ public interface JpaNotificationOutboxRepository extends ListCrudRepository<Noti
             @Param("failureReason") String failureReason,
             @Param("updatedAt") LocalDateTime updatedAt
     );
+
+    @Modifying(clearAutomatically = true)
+    @Query(
+            value = """
+                    DELETE FROM notification_outboxes
+                    WHERE status = 'SENT'
+                      AND sent_at < :cutoff
+                    LIMIT :batchSize
+                    """,
+            nativeQuery = true
+    )
+    int deleteSentOlderThan(@Param("cutoff") LocalDateTime cutoff, @Param("batchSize") int batchSize);
+
+    @Modifying(clearAutomatically = true)
+    @Query(
+            value = """
+                    DELETE FROM notification_outboxes
+                    WHERE status = 'FAILED'
+                      AND failed_at < :cutoff
+                    LIMIT :batchSize
+                    """,
+            nativeQuery = true
+    )
+    int deleteFailedOlderThan(@Param("cutoff") LocalDateTime cutoff, @Param("batchSize") int batchSize);
 }

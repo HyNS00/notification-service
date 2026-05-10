@@ -17,4 +17,8 @@ public interface NotificationOutboxRepository {
     List<NotificationOutbox> findRecoverableForUpdate(LocalDateTime cutoff, int batchSize);
 
     boolean saveIfLeaseMatched(NotificationOutbox outbox, LocalDateTime claimedProcessingStartedAt);
+
+    int deleteSentOlderThan(LocalDateTime cutoff, int batchSize);
+
+    int deleteFailedOlderThan(LocalDateTime cutoff, int batchSize);
 }
