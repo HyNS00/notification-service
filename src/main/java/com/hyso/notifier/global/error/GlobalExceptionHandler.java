@@ -4,6 +4,7 @@ import com.hyso.notifier.infrastructure.notification.exception.OrphanedDuplicate
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -25,6 +26,27 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ExceptionResponse response = ExceptionResponse.from(
                 CommonErrorCode.INVALID_INPUT,
                 firstFieldErrorMessage(exception)
+        );
+
+        return handleExceptionInternal(
+                exception,
+                response,
+                headers,
+                CommonErrorCode.INVALID_INPUT.getHttpStatus(),
+                request
+        );
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(
+            HttpMessageNotReadableException exception,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request
+    ) {
+        ExceptionResponse response = ExceptionResponse.from(
+                CommonErrorCode.INVALID_INPUT,
+                "요청 본문을 해석할 수 없습니다."
         );
 
         return handleExceptionInternal(
