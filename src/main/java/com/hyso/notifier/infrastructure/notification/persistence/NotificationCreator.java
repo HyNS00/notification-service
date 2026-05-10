@@ -1,5 +1,6 @@
 package com.hyso.notifier.infrastructure.notification.persistence;
 
+import com.hyso.notifier.application.notification.outbox.poll.PollingHintEmitter;
 import com.hyso.notifier.domain.notification.Notification;
 import com.hyso.notifier.domain.notification.outbox.NotificationOutbox;
 import com.hyso.notifier.infrastructure.notification.persistence.outbox.JpaNotificationOutboxRepository;
@@ -16,6 +17,7 @@ public class NotificationCreator {
     private final EntityManager entityManager;
     private final JpaNotificationRepository jpaNotificationRepository;
     private final JpaNotificationOutboxRepository jpaNotificationOutboxRepository;
+    private final PollingHintEmitter pollingHintEmitter;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Notification saveNew(Notification notification) {
@@ -23,6 +25,7 @@ public class NotificationCreator {
         NotificationOutbox outbox = createOutbox(saved);
         jpaNotificationOutboxRepository.save(outbox);
         entityManager.flush();
+        pollingHintEmitter.emit();
         return saved;
     }
 
