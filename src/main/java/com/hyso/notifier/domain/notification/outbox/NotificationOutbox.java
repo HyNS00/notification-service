@@ -116,6 +116,98 @@ public class NotificationOutbox {
         return new NotificationOutbox(notificationId, idempotencyKey, receiverId, channel, body, createdAt);
     }
 
+    public void claim(LocalDateTime now) {
+        if (now == null) {
+            throw new IllegalArgumentException("claim 시각은 비어 있을 수 없습니다.");
+        }
+        if (status != NotificationOutboxStatus.PENDING && status != NotificationOutboxStatus.RETRY_PENDING) {
+            throw new IllegalStateException("PENDING 또는 RETRY_PENDING 상태에서만 claim 할 수 있습니다.");
+        }
+        this.status = NotificationOutboxStatus.PROCESSING;
+        this.processingLeaseState = NotificationOutboxLeaseState.CLAIMED;
+        this.processingStartedAt = now;
+        this.processingAttempt += 1;
+        this.nextAttemptAt = null;
+        this.updatedAt = now;
+    }
+
+    public void markSent(LocalDateTime sentAt) {
+        if (sentAt == null) {
+            throw new IllegalArgumentException("발송 완료 시각은 비어 있을 수 없습니다.");
+        }
+        requireProcessing();
+        this.status = NotificationOutboxStatus.SENT;
+        this.processingLeaseState = NotificationOutboxLeaseState.IDLE;
+        this.processingStartedAt = null;
+        this.sentAt = sentAt;
+        this.failedAt = null;
+        this.failureReason = null;
+        this.nextAttemptAt = null;
+        this.updatedAt = sentAt;
+    }
+
+    public void markRetryPending(LocalDateTime failedAt, String failureReason, LocalDateTime nextAttemptAt) {
+        validateRetryPending(failedAt, failureReason, nextAttemptAt);
+        requireProcessing();
+        this.status = NotificationOutboxStatus.RETRY_PENDING;
+        this.processingLeaseState = NotificationOutboxLeaseState.IDLE;
+        this.processingStartedAt = null;
+        this.failedAt = failedAt;
+        this.failureReason = failureReason;
+        this.nextAttemptAt = nextAttemptAt;
+        this.updatedAt = failedAt;
+    }
+
+    public void markFailed(LocalDateTime failedAt, String failureReason) {
+        validateFailed(failedAt, failureReason);
+        requireProcessing();
+        this.status = NotificationOutboxStatus.FAILED;
+        this.processingLeaseState = NotificationOutboxLeaseState.IDLE;
+        this.processingStartedAt = null;
+        this.failedAt = failedAt;
+        this.failureReason = failureReason;
+        this.nextAttemptAt = null;
+        this.updatedAt = failedAt;
+    }
+
+    private void requireProcessing() {
+        if (status != NotificationOutboxStatus.PROCESSING) {
+            throw new IllegalStateException("PROCESSING 상태에서만 결과를 기록할 수 있습니다.");
+        }
+    }
+
+    private static void validateRetryPending(LocalDateTime failedAt, String failureReason, LocalDateTime nextAttemptAt) {
+        validateFailedAt(failedAt);
+        validateFailureReason(failureReason);
+        validateNextAttemptAt(nextAttemptAt);
+    }
+
+    private static void validateFailed(LocalDateTime failedAt, String failureReason) {
+        validateFailedAt(failedAt);
+        validateFailureReason(failureReason);
+    }
+
+    private static void validateFailedAt(LocalDateTime failedAt) {
+        if (failedAt == null) {
+            throw new IllegalArgumentException("실패 시각은 비어 있을 수 없습니다.");
+        }
+    }
+
+    private static void validateFailureReason(String failureReason) {
+        if (failureReason == null || failureReason.isBlank()) {
+            throw new IllegalArgumentException("실패 사유는 비어 있을 수 없습니다.");
+        }
+        if (failureReason.length() > 500) {
+            throw new IllegalArgumentException("실패 사유는 500자를 넘을 수 없습니다.");
+        }
+    }
+
+    private static void validateNextAttemptAt(LocalDateTime nextAttemptAt) {
+        if (nextAttemptAt == null) {
+            throw new IllegalArgumentException("다음 시도 시각은 비어 있을 수 없습니다.");
+        }
+    }
+
     private static void validate(
             Long notificationId,
             String idempotencyKey,
