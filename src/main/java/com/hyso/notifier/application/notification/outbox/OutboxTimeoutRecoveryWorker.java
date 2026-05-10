@@ -2,6 +2,7 @@ package com.hyso.notifier.application.notification.outbox;
 
 import com.hyso.notifier.domain.notification.outbox.NotificationOutbox;
 import com.hyso.notifier.domain.notification.outbox.repository.NotificationOutboxRepository;
+import com.hyso.notifier.domain.notification.repository.NotificationRepository;
 import com.hyso.notifier.global.config.OutboxRecoveryProperties;
 import com.hyso.notifier.global.config.OutboxRetryProperties;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import java.util.List;
 public class OutboxTimeoutRecoveryWorker {
 
     private final NotificationOutboxRepository notificationOutboxRepository;
+    private final NotificationRepository notificationRepository;
     private final OutboxRecoveryProperties outboxRecoveryProperties;
     private final OutboxRetryProperties outboxRetryProperties;
     private final RetryBackoffCalculator retryBackoffCalculator;
@@ -53,6 +55,7 @@ public class OutboxTimeoutRecoveryWorker {
 
         if (outbox.getProcessingAttempt() >= outboxRetryProperties.maxAttempts()) {
             outbox.markFailed(now, reason);
+            notificationRepository.markFailed(outbox.getNotificationId(), now, reason);
             return;
         }
         Duration delay = retryBackoffCalculator.nextDelay(outbox.getProcessingAttempt());

@@ -21,6 +21,7 @@ import java.util.List;
 public class OutboxProcessor {
 
     private final NotificationOutboxRepository notificationOutboxRepository;
+    private final OutboxResultPersister outboxResultPersister;
     private final NotificationDispatcherRegistry notificationDispatcherRegistry;
     private final RetryExceptionClassifier retryExceptionClassifier;
     private final RetryBackoffCalculator retryBackoffCalculator;
@@ -52,10 +53,7 @@ public class OutboxProcessor {
         if (dispatched) {
             outbox.markSent(LocalDateTime.now(clock));
         }
-        boolean persisted = notificationOutboxRepository.saveIfLeaseMatched(
-                outbox,
-                claimed.claimedProcessingStartedAt()
-        );
+        boolean persisted = outboxResultPersister.persist(outbox, claimed.claimedProcessingStartedAt());
         if (!persisted) {
             log.warn("outbox {} 의 lease 가 유실되어 결과 저장이 거부되었습니다", outbox.getId());
         }

@@ -3,6 +3,7 @@ package com.hyso.notifier.application.notification.outbox;
 import com.hyso.notifier.domain.notification.outbox.NotificationOutbox;
 import com.hyso.notifier.domain.notification.outbox.NotificationOutboxStatus;
 import com.hyso.notifier.domain.notification.outbox.repository.NotificationOutboxRepository;
+import com.hyso.notifier.domain.notification.repository.NotificationRepository;
 import com.hyso.notifier.global.config.OutboxRecoveryProperties;
 import com.hyso.notifier.global.config.OutboxRetryProperties;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +27,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
 
 @SuppressWarnings("NonAsciiCharacters")
 @ExtendWith(MockitoExtension.class)
@@ -40,6 +42,8 @@ class OutboxTimeoutRecoveryWorkerTest {
     @Mock
     NotificationOutboxRepository notificationOutboxRepository;
     @Mock
+    NotificationRepository notificationRepository;
+    @Mock
     OutboxRecoveryProperties outboxRecoveryProperties;
     @Mock
     OutboxRetryProperties outboxRetryProperties;
@@ -53,6 +57,7 @@ class OutboxTimeoutRecoveryWorkerTest {
     void setUp() {
         worker = new OutboxTimeoutRecoveryWorker(
                 notificationOutboxRepository,
+                notificationRepository,
                 outboxRecoveryProperties,
                 outboxRetryProperties,
                 retryBackoffCalculator,
@@ -90,9 +95,10 @@ class OutboxTimeoutRecoveryWorkerTest {
     }
 
     @Test
-    void attempt_초과_PROCESSING_행은_FAILED_로_복귀한다() {
+    void attempt_초과_PROCESSING_행은_FAILED_로_복귀하고_notification_도_같이_갱신된다() {
         NotificationOutbox stuck = stuckProcessingAtAttempt(MAX_ATTEMPTS);
         LocalDateTime claimedAt = stuck.getProcessingStartedAt();
+        String expectedReason = FailureReasons.leaseTimeout(claimedAt);
         given(notificationOutboxRepository.findRecoverableForUpdate(any(), eq(BATCH_SIZE)))
                 .willReturn(List.of(stuck));
 
@@ -100,8 +106,9 @@ class OutboxTimeoutRecoveryWorkerTest {
 
         assertAll(
                 () -> assertThat(stuck.getStatus()).isEqualTo(NotificationOutboxStatus.FAILED),
-                () -> assertThat(stuck.getFailureReason()).isEqualTo(FailureReasons.leaseTimeout(claimedAt))
+                () -> assertThat(stuck.getFailureReason()).isEqualTo(expectedReason)
         );
+        verify(notificationRepository).markFailed(stuck.getNotificationId(), FIXED_NOW, expectedReason);
     }
 
     private NotificationOutbox stuckProcessingAtAttempt(int targetAttempt) {

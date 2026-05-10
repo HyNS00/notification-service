@@ -44,6 +44,8 @@ class OutboxProcessorTest {
     @Mock
     NotificationOutboxRepository notificationOutboxRepository;
     @Mock
+    OutboxResultPersister outboxResultPersister;
+    @Mock
     NotificationDispatcherRegistry notificationDispatcherRegistry;
     @Mock
     RetryExceptionClassifier retryExceptionClassifier;
@@ -61,6 +63,7 @@ class OutboxProcessorTest {
     void setUp() {
         processor = new OutboxProcessor(
                 notificationOutboxRepository,
+                outboxResultPersister,
                 notificationDispatcherRegistry,
                 retryExceptionClassifier,
                 retryBackoffCalculator,
@@ -70,7 +73,7 @@ class OutboxProcessorTest {
         );
         lenient().when(outboxWorkerProperties.batchSize()).thenReturn(BATCH_SIZE);
         lenient().when(outboxRetryProperties.maxAttempts()).thenReturn(MAX_ATTEMPTS);
-        lenient().when(notificationOutboxRepository.saveIfLeaseMatched(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any())).thenReturn(true);
+        lenient().when(outboxResultPersister.persist(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any())).thenReturn(true);
     }
 
     @Test
@@ -166,9 +169,9 @@ class OutboxProcessorTest {
     }
 
     @Test
-    void dispatchAndPersist_는_lease_가_유실되어_saveIfLeaseMatched_가_false_여도_예외를_던지지_않는다() {
+    void dispatchAndPersist_는_lease_가_유실되어_persister_가_false_여도_예외를_던지지_않는다() {
         ClaimedOutbox claimed = claimedFromPending();
-        given(notificationOutboxRepository.saveIfLeaseMatched(org.mockito.ArgumentMatchers.any(), eq(claimed.claimedProcessingStartedAt())))
+        given(outboxResultPersister.persist(org.mockito.ArgumentMatchers.any(), eq(claimed.claimedProcessingStartedAt())))
                 .willReturn(false);
 
         processor.dispatchAndPersist(claimed);
