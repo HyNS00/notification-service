@@ -1,6 +1,5 @@
 package com.hyso.notifier.application.notification.outbox;
 
-import com.hyso.notifier.domain.notification.NotificationChannel;
 import com.hyso.notifier.domain.notification.outbox.NotificationOutbox;
 import com.hyso.notifier.domain.notification.outbox.NotificationOutboxStatus;
 import com.hyso.notifier.domain.notification.outbox.repository.NotificationOutboxRepository;
@@ -106,23 +105,11 @@ class OutboxTimeoutRecoveryWorkerTest {
     }
 
     private NotificationOutbox stuckProcessingAtAttempt(int targetAttempt) {
-        NotificationOutbox outbox = NotificationOutbox.create(
+        return OutboxFixtures.processingAtAttempt(
                 1L,
-                "c43f82d4a0f6c91a5b2e7d8f9340ab1e6c5d2f8a7b9e0134d6a2c8f5e1b9073d",
-                42L,
-                NotificationChannel.EMAIL,
-                "본문",
-                FIXED_NOW.minusHours(1)
+                FIXED_NOW.minusHours(1),
+                FIXED_NOW.minusMinutes(5),
+                targetAttempt
         );
-        for (int i = 1; i < targetAttempt; i++) {
-            outbox.claim(FIXED_NOW.minusMinutes(targetAttempt - i + 1));
-            outbox.markRetryPending(
-                    FIXED_NOW.minusMinutes(targetAttempt - i),
-                    "이전 실패",
-                    FIXED_NOW.minusMinutes(targetAttempt - i - 1)
-            );
-        }
-        outbox.claim(FIXED_NOW.minusMinutes(5));
-        return outbox;
     }
 }

@@ -177,14 +177,7 @@ class OutboxProcessorTest {
     }
 
     private NotificationOutbox pendingOutbox() {
-        return NotificationOutbox.create(
-                anyId(),
-                "c43f82d4a0f6c91a5b2e7d8f9340ab1e6c5d2f8a7b9e0134d6a2c8f5e1b9073d",
-                42L,
-                NotificationChannel.EMAIL,
-                "본문",
-                FIXED_NOW.minusMinutes(1)
-        );
+        return OutboxFixtures.pending(anyId(), FIXED_NOW.minusMinutes(1));
     }
 
     private ClaimedOutbox claimedFromPending() {
@@ -192,16 +185,12 @@ class OutboxProcessorTest {
     }
 
     private ClaimedOutbox claimedFromPendingAtAttempt(int targetAttempt) {
-        NotificationOutbox outbox = pendingOutbox();
-        for (int i = 1; i < targetAttempt; i++) {
-            outbox.claim(FIXED_NOW.minusMinutes(targetAttempt - i + 1));
-            outbox.markRetryPending(
-                    FIXED_NOW.minusMinutes(targetAttempt - i),
-                    "이전 실패",
-                    FIXED_NOW.minusMinutes(targetAttempt - i - 1)
-            );
-        }
-        outbox.claim(FIXED_NOW);
+        NotificationOutbox outbox = OutboxFixtures.processingAtAttempt(
+                anyId(),
+                FIXED_NOW.minusMinutes(1),
+                FIXED_NOW,
+                targetAttempt
+        );
         return new ClaimedOutbox(outbox, FIXED_NOW);
     }
 
