@@ -14,5 +14,7 @@ public interface NotificationOutboxRepository {
 
     List<NotificationOutbox> findClaimableForUpdate(LocalDateTime now, int batchSize);
 
+    List<NotificationOutbox> findRecoverableForUpdate(LocalDateTime cutoff, int batchSize);
+
     boolean saveIfLeaseMatched(NotificationOutbox outbox, LocalDateTime claimedProcessingStartedAt);
 }

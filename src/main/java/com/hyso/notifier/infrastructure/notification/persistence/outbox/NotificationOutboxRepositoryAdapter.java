@@ -33,6 +33,11 @@ public class NotificationOutboxRepositoryAdapter implements NotificationOutboxRe
     }
 
     @Override
+    public List<NotificationOutbox> findRecoverableForUpdate(LocalDateTime cutoff, int batchSize) {
+        return jpaNotificationOutboxRepository.findRecoverableForUpdate(cutoff, batchSize);
+    }
+
+    @Override
     @Transactional
     public boolean saveIfLeaseMatched(NotificationOutbox outbox, LocalDateTime claimedProcessingStartedAt) {
         validate(outbox, claimedProcessingStartedAt);

@@ -31,6 +31,23 @@ public interface JpaNotificationOutboxRepository extends ListCrudRepository<Noti
             @Param("batchSize") int batchSize
     );
 
+    @Query(
+            value = """
+                    SELECT *
+                    FROM notification_outboxes
+                    WHERE status = 'PROCESSING'
+                      AND processing_started_at < :cutoff
+                    ORDER BY processing_started_at ASC
+                    LIMIT :batchSize
+                    FOR UPDATE SKIP LOCKED
+                    """,
+            nativeQuery = true
+    )
+    List<NotificationOutbox> findRecoverableForUpdate(
+            @Param("cutoff") LocalDateTime cutoff,
+            @Param("batchSize") int batchSize
+    );
+
     @Modifying(clearAutomatically = true)
     @Query(
             value = """
