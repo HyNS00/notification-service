@@ -8,6 +8,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
@@ -22,6 +23,9 @@ import java.time.LocalDateTime;
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_notification_outboxes_notification", columnNames = "notification_id"),
                 @UniqueConstraint(name = "uk_notification_outboxes_idem", columnNames = "idempotency_key")
+        },
+        indexes = {
+                @Index(name = "idx_outbox_status_next_attempt", columnList = "status, next_attempt_at, id")
         }
 )
 @Getter
@@ -51,6 +55,9 @@ public class NotificationOutbox {
 
     @Column(name = "processing_started_at")
     private LocalDateTime processingStartedAt;
+
+    @Column(name = "next_attempt_at")
+    private LocalDateTime nextAttemptAt;
 
     @Column(name = "receiver_id", nullable = false)
     private Long receiverId;
