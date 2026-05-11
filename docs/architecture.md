@@ -1,29 +1,29 @@
 # 비동기 처리 구조 및 재시도 정책
 
-명세 §추가 제출물 *"비동기 처리 구조 및 재시도 정책 설명 문서"* 의 답. README §설계 결정과 이유 의 *상세판*.
+명세 추가 제출물 *"비동기 처리 구조 및 재시도 정책 설명 문서"* 의 답. README *설계 결정과 이유* 의 상세판.
 
 ## 1. 개요 — 왜 outbox 패턴인가
 
-명세 §제약:
+명세 제약:
 > 실제 메시지 브로커 설치 불필요. 단, 실제 운영 환경으로 전환 가능한 구조여야 함
 
 브로커 없이 *비동기 발송* + *재시도* + *다중 인스턴스 안전* 을 모두 충족하려면 **DB 자체가 큐 역할** 을 해야 함. 이게 *transactional outbox 패턴*.
 
 ```mermaid
 flowchart TB
-    subgraph TX["등록 트랜잭션 (REQUIRES_NEW + flush)"]
+    subgraph TX["등록 트랜잭션 — REQUIRES_NEW + flush"]
         direction LR
-        N[("notifications<br/>INSERT")]
-        O[("notification_outboxes<br/>INSERT status=PENDING")]
+        N[("notifications INSERT")]
+        O[("notification_outboxes INSERT — PENDING")]
     end
 
     API["POST /api/notifications"] --> TX
-    TX -->|commit (둘 다 또는 둘 다 아님)| Done["DB 상태 일관"]
+    TX -->|commit — 둘 다 또는 둘 다 아님| Done["DB 상태 일관"]
 
-    Worker["OutboxWorker<br/>별도 스레드 / 별도 트랜잭션<br/>polling 100ms~5s + wake-up"]
+    Worker["OutboxWorker<br/>별도 스레드 · 별도 트랜잭션<br/>polling 100ms~5s + wake-up"]
     Worker -->|claim FOR UPDATE SKIP LOCKED| O
-    Worker --> Dispatch["dispatch 외부 IO<br/>(락 미보유)"]
-    Dispatch --> Persist["결과 저장<br/>lease exact-match"]
+    Worker --> Dispatch["dispatch 외부 IO — 락 미보유"]
+    Dispatch --> Persist["결과 저장 — lease exact-match"]
     Persist -.-> N
     Persist -.-> O
 ```
@@ -59,21 +59,21 @@ dual-write 의미:
 
 ```mermaid
 erDiagram
-    notifications ||--|| notification_outboxes : "1:1 (notification_id)"
+    notifications ||--|| notification_outboxes : "1:1"
 
     notifications {
         BIGINT id PK
         BIGINT receiver_id
-        VARCHAR type "ENROLLMENT_COMPLETED|PAYMENT_CONFIRMED|COURSE_START_D1|ENROLLMENT_CANCELLED"
-        VARCHAR channel "EMAIL|IN_APP"
-        VARCHAR ref_type "64"
+        VARCHAR type
+        VARCHAR channel
+        VARCHAR ref_type
         BIGINT ref_id
-        VARCHAR body "500"
-        VARCHAR idempotency_key UK "SHA-256 hex 64"
-        TIMESTAMP sent_at "nullable"
-        TIMESTAMP failed_at "nullable"
-        VARCHAR failure_reason "500, nullable"
-        TIMESTAMP read_at "nullable"
+        VARCHAR body
+        VARCHAR idempotency_key UK
+        TIMESTAMP sent_at
+        TIMESTAMP failed_at
+        VARCHAR failure_reason
+        TIMESTAMP read_at
         TIMESTAMP created_at
     }
 
@@ -81,21 +81,30 @@ erDiagram
         BIGINT id PK
         BIGINT notification_id UK
         VARCHAR idempotency_key UK
-        VARCHAR status "PENDING|PROCESSING|DISPATCHED|RETRY_PENDING|FAILED"
+        VARCHAR status
         INT processing_attempt
-        VARCHAR processing_lease_state "IDLE|CLAIMED"
-        TIMESTAMP processing_started_at "lease timestamp"
-        TIMESTAMP next_attempt_at "재시도 백오프"
-        BIGINT receiver_id "dispatch snapshot"
-        VARCHAR channel "dispatch snapshot"
-        VARCHAR body "dispatch snapshot"
-        TIMESTAMP dispatched_at "nullable"
-        TIMESTAMP failed_at "nullable"
-        VARCHAR failure_reason "500, nullable"
+        VARCHAR processing_lease_state
+        TIMESTAMP processing_started_at
+        TIMESTAMP next_attempt_at
+        BIGINT receiver_id
+        VARCHAR channel
+        VARCHAR body
+        TIMESTAMP dispatched_at
+        TIMESTAMP failed_at
+        VARCHAR failure_reason
         TIMESTAMP created_at
         TIMESTAMP updated_at
     }
 ```
+
+ENUM 후보값 (mermaid 코멘트로 표현하면 GitHub 렌더가 깨지므로 본문에 분리):
+
+| 컬럼 | 후보값 |
+| --- | --- |
+| `notifications.type` | `ENROLLMENT_COMPLETED`, `PAYMENT_CONFIRMED`, `COURSE_START_D1`, `ENROLLMENT_CANCELLED` |
+| `notifications.channel`, `notification_outboxes.channel` | `EMAIL`, `IN_APP` |
+| `notification_outboxes.status` | `PENDING`, `PROCESSING`, `DISPATCHED`, `RETRY_PENDING`, `FAILED` |
+| `notification_outboxes.processing_lease_state` | `IDLE`, `CLAIMED` |
 
 ### 2.3 `notifications` DDL
 
@@ -177,37 +186,37 @@ sequenceDiagram
     participant Client
     participant Ctrl as NotificationController
     participant Svc as NotificationService
-    participant Repo as NotificationRepository<br/>(saveOrFind)
-    participant Creator as NotificationCreator<br/>(REQUIRES_NEW + flush)
+    participant Repo as NotificationRepository
+    participant Creator as NotificationCreator
     participant DB
     participant Event as ApplicationEventPublisher
     participant Worker as OutboxWorker
 
     Client->>Ctrl: POST /api/notifications
     Ctrl->>Svc: register(request)
-    Svc->>Svc: SHA-256(5요소) → idempotencyKey<br/>NotificationMessageRenderer.render(type)
+    Svc->>Svc: SHA-256 5요소 → idempotencyKey
     Svc->>Repo: saveOrFind(notification, outbox)
-    Repo->>Creator: saveNew()
+    Repo->>Creator: saveNew — REQUIRES_NEW + flush
     Creator->>DB: INSERT notifications
-    Creator->>DB: INSERT notification_outboxes (PENDING)
-    Creator->>DB: flush()
+    Creator->>DB: INSERT notification_outboxes PENDING
+    Creator->>DB: flush
     alt 성공
-        Creator-->>Repo: Notification(id)
-        Repo-->>Svc: NotificationSaveResult(created=true)
-        Svc-->>Ctrl: result(id, created=true)
-        Ctrl-->>Client: 202 Accepted {"id": N}
+        Creator-->>Repo: Notification id
+        Repo-->>Svc: NotificationSaveResult created=true
+        Svc-->>Ctrl: result id, created=true
+        Ctrl-->>Client: 202 Accepted
         Note over Creator,Event: commit 직후
-        Event->>Worker: OutboxRowAvailableEvent (AFTER_COMMIT)
-        Worker->>Worker: adaptivePollingRunner.wakeUp()
+        Event->>Worker: OutboxRowAvailableEvent — AFTER_COMMIT
+        Worker->>Worker: adaptivePollingRunner.wakeUp
     else DataIntegrityViolationException
         Creator-->>Repo: 예외 propagate
         Repo->>Repo: DuplicateKeyDetector.isDuplicateKey?
-        alt true (UNIQUE 위반)
+        alt UNIQUE 위반
             Repo->>DB: findByIdempotencyKey
-            Repo-->>Svc: NotificationSaveResult(created=false, 기존 id)
-            Svc-->>Ctrl: result(기존 id, created=false)
-            Ctrl-->>Client: 200 OK {"id": N} (silent dedup)
-        else 그 외 (NOT NULL / FK 등)
+            Repo-->>Svc: NotificationSaveResult created=false, 기존 id
+            Svc-->>Ctrl: result 기존 id, created=false
+            Ctrl-->>Client: 200 OK silent dedup
+        else NOT NULL / FK 등
             Repo-->>Client: 500 Internal Error
         end
     end
@@ -231,37 +240,37 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Poller as AdaptivePollingRunner<br/>(100ms~5s + wake-up)
+    participant Poller as AdaptivePollingRunner
     participant Worker as OutboxWorker
     participant Proc as OutboxProcessor
     participant DB as notification_outboxes
-    participant Dispatcher as NotificationDispatcherRegistry
+    participant Dispatcher as DispatcherRegistry
     participant Persister as OutboxResultPersister
     participant N as notifications
 
-    Poller->>Worker: poll cycle
-    Worker->>Proc: claimBatch() [@Transactional]
+    Poller->>Worker: poll cycle — 100ms~5s + wake-up
+    Worker->>Proc: claimBatch — Transactional
     Proc->>DB: SELECT ... FOR UPDATE SKIP LOCKED LIMIT 10
     DB-->>Proc: claimable rows
-    Proc->>DB: outbox.claim(now)<br/>status=PROCESSING, lease=now, attempt++
-    Proc-->>Worker: List<ClaimedOutbox(outbox, claimedTimestamp)>
+    Proc->>DB: outbox.claim now — PROCESSING, lease=now, attempt++
+    Proc-->>Worker: ClaimedOutbox 목록
 
-    loop 각 ClaimedOutbox (트랜잭션 밖, 락 미보유)
-        Worker->>Dispatcher: dispatch(channel, outbox)
+    loop 각 ClaimedOutbox — 트랜잭션 밖, 락 미보유
+        Worker->>Dispatcher: dispatch channel, outbox
         alt 성공
             Dispatcher-->>Worker: ok
-            Worker->>Worker: outbox.markDispatched(now)
+            Worker->>Worker: outbox.markDispatched now
         else 실패
             Dispatcher-->>Worker: throw
-            Worker->>Worker: handleFailure<br/>(retryable? attempt < max?)<br/>→ markRetryPending or markFailed
+            Worker->>Worker: handleFailure — retryable? attempt 한도?
         end
-        Worker->>Persister: persist(outbox, claimedTimestamp) [@Transactional]
-        Persister->>DB: UPDATE WHERE processing_started_at = :claimedTimestamp
-        alt 1 row updated (lease 일치)
-            Persister->>N: notifications.markSent / markFailed
+        Worker->>Persister: persist — Transactional
+        Persister->>DB: UPDATE WHERE processing_started_at = claimedTimestamp
+        alt 1 row updated — lease 일치
+            Persister->>N: notifications.markSent or markFailed
             Persister-->>Worker: true
-        else 0 row updated (lease 유실)
-            Persister-->>Worker: false<br/>log.warn "lease 유실로 결과 저장 거부"
+        else 0 row updated — lease 유실
+            Persister-->>Worker: false — log.warn 결과 저장 거부
         end
     end
 ```
@@ -493,13 +502,13 @@ public synchronized void stop() {
 
 ---
 
-## 8. 운영 시나리오 — 명세 §필수 5 직접 답변
+## 8. 운영 시나리오 — 명세 필수 5번 직접 답변
 
 ### 8.1 처리 중 상태 지속 → 복구
 
 > "처리 중 상태가 일정 시간 이상 지속되는 경우 복구 방법을 설계하세요."
 
-**답**: `OutboxTimeoutRecoveryWorker` (`@Scheduled fixedDelay 30s`) 가 `processing_started_at < now - 60s` 인 행을 RETRY_PENDING / FAILED 로 복구. §5.3 참조.
+**답**: `OutboxTimeoutRecoveryWorker` (`@Scheduled fixedDelay 30s`) 가 `processing_started_at < now - 60s` 인 행을 RETRY_PENDING / FAILED 로 복구. 5.3 참조.
 
 **시연**: 워커가 dispatch 중 강제 kill → 60초 후 recovery worker 가 해당 outbox 의 status 를 RETRY_PENDING 으로 변경 → 다음 polling 사이클에서 다른 워커 (또는 같은 워커) 가 잡아 재처리.
 
@@ -528,7 +537,7 @@ docker compose logs app | grep '\[EMAIL\]'
 
 > "다중 인스턴스 환경에서도 동일 알림이 중복 처리되어서는 안 됩니다."
 
-**답**: §5.1 (SKIP LOCKED) + §5.2 (lease exact-match) 두 단계 방어. §9 시연 결과 참조.
+**답**: 5.1 (SKIP LOCKED) + 5.2 (lease exact-match) 두 단계 방어. 9 시연 결과 참조.
 
 ---
 
@@ -582,7 +591,7 @@ docker compose logs app 2>&1 | grep '\[EMAIL\]\|\[IN_APP\]' \
 - ✅ **양쪽 인스턴스가 모두 dispatch** = 다중 인스턴스 환경 정상 동작
 - 처리 비율 (app-1 : app-2 = 17 : 4) 은 *우연* — POST 가 호스트 8080 (= app-1) 으로만 들어왔고 wake-up event 가 app-1 만 깨움. app-2 는 polling 으로 *그 사이 lock 잡힌 행들을 SKIP* 한 뒤 *그 다음 행* 일부를 잡음. **race 보호가 정확히 동작한 증거**
 
-→ 명세 §필수 5 의 *"다중 인스턴스 환경에서도 동일 알림이 중복 처리되어서는 안 됩니다"* **실시간 시각 증명**.
+→ 명세 필수 5번 의 *"다중 인스턴스 환경에서도 동일 알림이 중복 처리되어서는 안 됩니다"* **실시간 시각 증명**.
 
 ---
 

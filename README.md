@@ -29,24 +29,24 @@
 
 ```mermaid
 flowchart LR
-    Client["클라이언트<br/>(외부 시스템)"]
+    Client["클라이언트 — 외부 시스템"]
     API["POST /api/notifications<br/>NotificationController"]
-    Service["NotificationService<br/>(SHA-256 멱등성 키 생성)"]
+    Service["NotificationService<br/>SHA-256 멱등성 키 생성"]
 
-    subgraph TX1["등록 트랜잭션 (REQUIRES_NEW + flush)"]
-        N[("notifications<br/>(영구)")]
+    subgraph TX1["등록 트랜잭션 — REQUIRES_NEW + flush"]
+        N[("notifications<br/>영구")]
         O[("notification_outboxes<br/>status=PENDING")]
     end
 
-    Worker["OutboxWorker<br/>(SmartLifecycle, daemon)<br/>adaptive polling 100ms~5s<br/>+ wake-up event"]
+    Worker["OutboxWorker<br/>SmartLifecycle daemon<br/>adaptive polling 100ms~5s<br/>+ wake-up event"]
     Dispatcher{NotificationDispatcher<br/>registry}
     Email["EmailLogDispatcher"]
     InApp["InAppLogDispatcher"]
 
-    Recovery["OutboxTimeoutRecoveryWorker<br/>(@Scheduled 30s)"]
-    Cleanup["OutboxCleanupScheduler<br/>(@Scheduled 1h)"]
+    Recovery["OutboxTimeoutRecoveryWorker<br/>@Scheduled 30s"]
+    Cleanup["OutboxCleanupScheduler<br/>@Scheduled 1h"]
 
-    QueryAPI["GET /api/notifications<br/>GET /api/notifications/{id}<br/>(X-User-Id 헤더)"]
+    QueryAPI["GET /api/notifications<br/>GET /api/notifications/id<br/>X-User-Id 헤더"]
 
     Client -->|POST| API --> Service --> TX1
     Worker -->|FOR UPDATE SKIP LOCKED| O
@@ -405,18 +405,18 @@ curl -s 'http://localhost:8080/api/notifications'                     -H 'X-User
 stateDiagram-v2
     [*] --> PENDING : 등록 트랜잭션 INSERT
 
-    PENDING --> PROCESSING : claim (FOR UPDATE SKIP LOCKED)<br/>attempt++, lease timestamp 기록
+    PENDING --> PROCESSING : claim — FOR UPDATE SKIP LOCKED<br/>attempt++, lease timestamp 기록
     RETRY_PENDING --> PROCESSING : backoff 만료 후 재claim
 
-    PROCESSING --> DISPATCHED : dispatch 성공<br/>(notifications.sent_at 도 갱신)
-    PROCESSING --> RETRY_PENDING : retryable 실패 + attempt < 5<br/>next_attempt_at = now + delay
-    PROCESSING --> FAILED : non-retryable OR attempt >= 5<br/>(notifications.failed_at 도 갱신)
+    PROCESSING --> DISPATCHED : dispatch 성공<br/>notifications.sent_at 도 갱신
+    PROCESSING --> RETRY_PENDING : retryable 실패 + attempt 미달<br/>next_attempt_at = now + delay
+    PROCESSING --> FAILED : non-retryable OR attempt 한도<br/>notifications.failed_at 도 갱신
 
-    PROCESSING --> RETRY_PENDING : timeout recovery<br/>(60s 넘게 stuck, attempt < 5)
-    PROCESSING --> FAILED : timeout recovery<br/>(60s 넘게 stuck, attempt >= 5)
+    PROCESSING --> RETRY_PENDING : timeout recovery<br/>60s 넘게 stuck + attempt 미달
+    PROCESSING --> FAILED : timeout recovery<br/>60s 넘게 stuck + attempt 한도
 
-    DISPATCHED --> [*] : cleanup (7일 후)
-    FAILED --> [*] : cleanup (30일 후)
+    DISPATCHED --> [*] : cleanup 7일 후
+    FAILED --> [*] : cleanup 30일 후
 ```
 
 ERD (mermaid `erDiagram`) + 전체 DDL + 인덱스 설계 근거는 [`docs/architecture.md`](docs/architecture.md) 2장 참조.
@@ -516,18 +516,18 @@ sequenceDiagram
     participant W2 as Worker B
     participant T as TimeoutRecovery
 
-    W1->>DB: claim (FOR UPDATE SKIP LOCKED)<br/>status=PROCESSING, lease ts=T1
-    Note over W1,DB: 외부 IO 동안<br/>락 미보유
-    W2->>DB: 같은 행 claim 시도<br/>SKIP LOCKED (방어 1)
-    W1->>W1: dispatch (외부 IO)
+    W1->>DB: claim — FOR UPDATE SKIP LOCKED<br/>status=PROCESSING, lease ts=T1
+    Note over W1,DB: 외부 IO 동안 락 미보유
+    W2->>DB: 같은 행 claim 시도<br/>SKIP LOCKED — 방어 1
+    W1->>W1: dispatch — 외부 IO
 
     Note over T,DB: 60s 경과
-    T->>DB: stuck PROCESSING 발견<br/>RETRY_PENDING + lease ts=null (방어 3)
+    T->>DB: stuck PROCESSING 발견<br/>RETRY_PENDING + lease ts=null — 방어 3
     W2->>DB: re-claim<br/>status=PROCESSING, lease ts=T2
 
-    W1->>DB: 결과 저장 (lease ts=T1)<br/>WHERE processing_started_at=T1
-    DB-->>W1: 0 row updated (방어 2)<br/>결과 거부 + log.warn
-    W2->>DB: 결과 저장 (lease ts=T2) → 1 row updated
+    W1->>DB: 결과 저장 — lease ts=T1<br/>WHERE processing_started_at=T1
+    DB-->>W1: 0 row updated — 방어 2<br/>결과 거부 + log.warn
+    W2->>DB: 결과 저장 lease ts=T2 — 1 row updated
 ```
 
 | 방어 | 단계 | 메커니즘 |
