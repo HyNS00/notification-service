@@ -1,11 +1,15 @@
 package com.hyso.notifier.global.error;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MissingRequestHeaderException;
+
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -117,6 +121,23 @@ class GlobalExceptionHandlerTest {
                 () -> assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST),
                 () -> assertThat(actual.getBody()).isEqualTo(
                         new ExceptionResponse("INVALID_INPUT", "요청 값의 형식이 올바르지 않습니다.")
+                )
+        );
+    }
+
+    @Test
+    void ConstraintViolationException은_첫_위반_메시지로_INVALID_INPUT을_반환한다() {
+        @SuppressWarnings("unchecked")
+        ConstraintViolation<Object> violation = mock(ConstraintViolation.class);
+        given(violation.getMessage()).willReturn("limit 은 1 이상이어야 합니다.");
+        ConstraintViolationException exception = new ConstraintViolationException(Set.of(violation));
+
+        ResponseEntity<Object> actual = handler.handleConstraintViolationException(exception);
+
+        assertAll(
+                () -> assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST),
+                () -> assertThat(actual.getBody()).isEqualTo(
+                        new ExceptionResponse("INVALID_INPUT", "limit 은 1 이상이어야 합니다.")
                 )
         );
     }

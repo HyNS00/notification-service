@@ -7,6 +7,7 @@ import com.hyso.notifier.domain.notification.NotificationType;
 import com.hyso.notifier.domain.notification.repository.NotificationRepository;
 import com.hyso.notifier.infrastructure.notification.exception.NotificationNotFoundException;
 import com.hyso.notifier.presentation.notification.dto.request.CreateNotificationRequest;
+import com.hyso.notifier.presentation.notification.dto.response.NotificationListResponse;
 import com.hyso.notifier.presentation.notification.dto.response.NotificationResponse;
 import com.hyso.notifier.presentation.notification.dto.response.NotificationStatus;
 import org.junit.jupiter.api.DisplayNameGeneration;
@@ -91,6 +92,56 @@ class NotificationServiceIntegrationTest {
     void 타인_소유_알림을_조회하면_NotificationNotFoundException을_던진다() {
         assertThatThrownBy(() -> notificationService.findOne(1L, 6L))
                 .isInstanceOf(NotificationNotFoundException.class);
+    }
+
+    @Sql("/sql/notification/insert_notifications_for_paging.sql")
+    @Test
+    void 목록을_조회하면_본인_알림만_최신순으로_반환한다() {
+        NotificationListResponse actual = notificationService.findList(1L, null, 10);
+
+        assertThat(actual.items())
+                .extracting(NotificationResponse::id)
+                .containsExactly(5L, 4L, 3L, 2L, 1L);
+    }
+
+    @Sql("/sql/notification/insert_notifications_for_paging.sql")
+    @Test
+    void read_true_필터는_읽은_알림만_반환한다() {
+        NotificationListResponse actual = notificationService.findList(1L, true, 10);
+
+        assertThat(actual.items())
+                .extracting(NotificationResponse::id)
+                .containsExactly(2L);
+    }
+
+    @Sql("/sql/notification/insert_notifications_for_paging.sql")
+    @Test
+    void read_false_필터는_읽지_않은_알림만_반환한다() {
+        NotificationListResponse actual = notificationService.findList(1L, false, 10);
+
+        assertThat(actual.items())
+                .extracting(NotificationResponse::id)
+                .containsExactly(5L, 4L, 3L, 1L);
+    }
+
+    @Sql("/sql/notification/insert_notifications_for_paging.sql")
+    @Test
+    void 타인_알림은_목록에_노출되지_않는다() {
+        NotificationListResponse actual = notificationService.findList(1L, null, 100);
+
+        assertThat(actual.items())
+                .extracting(NotificationResponse::id)
+                .doesNotContain(6L, 7L);
+    }
+
+    @Sql("/sql/notification/insert_notifications_for_paging.sql")
+    @Test
+    void limit_만큼_최신순으로_반환한다() {
+        NotificationListResponse actual = notificationService.findList(1L, null, 3);
+
+        assertThat(actual.items())
+                .extracting(NotificationResponse::id)
+                .containsExactly(5L, 4L, 3L);
     }
 
     private CreateNotificationRequest request() {

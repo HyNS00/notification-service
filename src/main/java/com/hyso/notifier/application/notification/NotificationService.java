@@ -3,8 +3,10 @@ package com.hyso.notifier.application.notification;
 import com.hyso.notifier.domain.notification.Notification;
 import com.hyso.notifier.domain.notification.repository.NotificationRepository;
 import com.hyso.notifier.domain.notification.repository.NotificationSaveResult;
+import com.hyso.notifier.domain.notification.repository.ReadFilter;
 import com.hyso.notifier.infrastructure.notification.exception.NotificationNotFoundException;
 import com.hyso.notifier.presentation.notification.dto.request.CreateNotificationRequest;
+import com.hyso.notifier.presentation.notification.dto.response.NotificationListResponse;
 import com.hyso.notifier.presentation.notification.dto.response.NotificationResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -12,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +40,20 @@ public class NotificationService {
         return notificationRepository.findByIdAndReceiverId(notificationId, userId)
                 .map(notification -> NotificationResponse.from(notification))
                 .orElseThrow(() -> new NotificationNotFoundException(notificationId));
+    }
+
+    @Transactional(readOnly = true)
+    public NotificationListResponse findList(Long userId, Boolean read, int limit) {
+        ReadFilter filter = toFilter(read);
+        List<Notification> items = notificationRepository.findPage(userId, filter, limit);
+        return NotificationListResponse.of(items);
+    }
+
+    private static ReadFilter toFilter(Boolean read) {
+        if (read == null) {
+            return ReadFilter.ALL;
+        }
+        return read ? ReadFilter.READ : ReadFilter.UNREAD;
     }
 
     private String createIdempotencyKey(CreateNotificationRequest request) {

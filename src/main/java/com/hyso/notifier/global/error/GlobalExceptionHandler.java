@@ -3,6 +3,7 @@ package com.hyso.notifier.global.error;
 import com.hyso.notifier.application.notification.outbox.exception.UnsupportedDispatchChannelException;
 import com.hyso.notifier.infrastructure.notification.exception.NotificationNotFoundException;
 import com.hyso.notifier.infrastructure.notification.exception.OrphanedDuplicateException;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -93,6 +94,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<Object> handleMethodArgumentTypeMismatchException() {
         return createResponseEntity(CommonErrorCode.INVALID_INPUT, "요청 값의 형식이 올바르지 않습니다.");
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Object> handleConstraintViolationException(ConstraintViolationException exception) {
+        String message = exception.getConstraintViolations().stream()
+                .findFirst()
+                .map(violation -> violation.getMessage())
+                .orElse(CommonErrorCode.INVALID_INPUT.getMessage());
+        return createResponseEntity(CommonErrorCode.INVALID_INPUT, message);
     }
 
     @ExceptionHandler(IllegalStateException.class)
