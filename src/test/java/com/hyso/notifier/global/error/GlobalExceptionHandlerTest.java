@@ -5,9 +5,12 @@ import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingRequestHeaderException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 @SuppressWarnings("NonAsciiCharacters")
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
@@ -60,6 +63,72 @@ class GlobalExceptionHandlerTest {
                 () -> assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR),
                 () -> assertThat(actual.getBody()).isEqualTo(
                         new ExceptionResponse("UNSUPPORTED_DISPATCH_CHANNEL", "발송 채널을 처리할 수 없습니다.")
+                )
+        );
+    }
+
+    @Test
+    void NotificationNotFoundException은_NOTIFICATION_NOT_FOUND로_응답한다() {
+        ResponseEntity<Object> actual = handler.handleNotificationNotFoundException();
+
+        assertAll(
+                () -> assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND),
+                () -> assertThat(actual.getBody()).isEqualTo(
+                        new ExceptionResponse("NOTIFICATION_NOT_FOUND", "알림을 찾을 수 없습니다.")
+                )
+        );
+    }
+
+    @Test
+    void InvalidChannelForReadException은_INVALID_CHANNEL_FOR_READ로_응답한다() {
+        ResponseEntity<Object> actual = handler.handleInvalidChannelForReadException();
+
+        assertAll(
+                () -> assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST),
+                () -> assertThat(actual.getBody()).isEqualTo(
+                        new ExceptionResponse("INVALID_CHANNEL_FOR_READ", "이 채널의 알림은 읽음 처리할 수 없습니다.")
+                )
+        );
+    }
+
+    @Test
+    void X_User_Id_헤더가_누락되면_사용자_식별_헤더_메시지로_응답한다() {
+        MissingRequestHeaderException exception = mock(MissingRequestHeaderException.class);
+        given(exception.getHeaderName()).willReturn("X-User-Id");
+
+        ResponseEntity<Object> actual = handler.handleMissingRequestHeaderException(exception);
+
+        assertAll(
+                () -> assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST),
+                () -> assertThat(actual.getBody()).isEqualTo(
+                        new ExceptionResponse("INVALID_INPUT", "사용자 식별 헤더가 비어 있을 수 없습니다.")
+                )
+        );
+    }
+
+    @Test
+    void X_User_Id_외_헤더가_누락되면_일반_헤더_누락_메시지로_응답한다() {
+        MissingRequestHeaderException exception = mock(MissingRequestHeaderException.class);
+        given(exception.getHeaderName()).willReturn("X-Other-Header");
+
+        ResponseEntity<Object> actual = handler.handleMissingRequestHeaderException(exception);
+
+        assertAll(
+                () -> assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST),
+                () -> assertThat(actual.getBody()).isEqualTo(
+                        new ExceptionResponse("INVALID_INPUT", "필수 헤더가 누락되었습니다.")
+                )
+        );
+    }
+
+    @Test
+    void 요청_값_형식이_맞지_않으면_형식_오류_메시지로_응답한다() {
+        ResponseEntity<Object> actual = handler.handleMethodArgumentTypeMismatchException();
+
+        assertAll(
+                () -> assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST),
+                () -> assertThat(actual.getBody()).isEqualTo(
+                        new ExceptionResponse("INVALID_INPUT", "요청 값의 형식이 올바르지 않습니다.")
                 )
         );
     }
