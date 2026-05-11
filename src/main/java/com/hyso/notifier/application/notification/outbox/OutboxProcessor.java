@@ -75,13 +75,21 @@ public class OutboxProcessor {
 
         if (classification == RetryExceptionClassifier.Classification.NON_RETRYABLE) {
             outbox.markFailed(now, FailureReasons.fromException(cause));
+            log.warn("outbox {} dispatch 실패 (NON_RETRYABLE) → FAILED: {}",
+                    outbox.getId(), cause.toString());
             return;
         }
         if (outbox.getProcessingAttempt() >= outboxRetryProperties.maxAttempts()) {
             outbox.markFailed(now, FailureReasons.maxAttemptsExceeded(outbox.getProcessingAttempt(), cause));
+            log.warn("outbox {} dispatch 실패 (max attempts {}/{}) → FAILED: {}",
+                    outbox.getId(), outbox.getProcessingAttempt(),
+                    outboxRetryProperties.maxAttempts(), cause.toString());
             return;
         }
         Duration delay = retryBackoffCalculator.nextDelay(outbox.getProcessingAttempt());
         outbox.markRetryPending(now, FailureReasons.fromException(cause), now.plus(delay));
+        log.warn("outbox {} dispatch 실패 (attempt {}/{}) → RETRY_PENDING in {}ms: {}",
+                outbox.getId(), outbox.getProcessingAttempt(),
+                outboxRetryProperties.maxAttempts(), delay.toMillis(), cause.toString());
     }
 }

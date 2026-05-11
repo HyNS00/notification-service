@@ -38,6 +38,7 @@ public class OutboxWorker implements SmartLifecycle {
         thread.setDaemon(true);
         workerThread = thread;
         thread.start();
+        log.info("OutboxWorker 시작 — auto-start={}", outboxWorkerProperties.autoStart());
     }
 
     @Override
@@ -56,6 +57,7 @@ public class OutboxWorker implements SmartLifecycle {
                 Thread.currentThread().interrupt();
             }
         }
+        log.info("OutboxWorker 종료");
     }
 
     @Override

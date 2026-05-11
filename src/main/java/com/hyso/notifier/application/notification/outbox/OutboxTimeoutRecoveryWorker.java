@@ -56,9 +56,15 @@ public class OutboxTimeoutRecoveryWorker {
         if (outbox.getProcessingAttempt() >= outboxRetryProperties.maxAttempts()) {
             outbox.markFailed(now, reason);
             notificationRepository.markFailed(outbox.getNotificationId(), now, reason);
+            log.info("outbox {} lease timeout (attempt {}/{}) → FAILED",
+                    outbox.getId(), outbox.getProcessingAttempt(),
+                    outboxRetryProperties.maxAttempts());
             return;
         }
         Duration delay = retryBackoffCalculator.nextDelay(outbox.getProcessingAttempt());
         outbox.markRetryPending(now, reason, now.plus(delay));
+        log.info("outbox {} lease timeout (attempt {}/{}) → RETRY_PENDING in {}ms",
+                outbox.getId(), outbox.getProcessingAttempt(),
+                outboxRetryProperties.maxAttempts(), delay.toMillis());
     }
 }
