@@ -38,3 +38,6 @@ CREATE TABLE IF NOT EXISTS notification_outboxes (
 
 CREATE INDEX IF NOT EXISTS idx_outbox_status_next_attempt
     ON notification_outboxes (status, next_attempt_at, id);
+
+CREATE INDEX IF NOT EXISTS idx_notification_receiver_created
+    ON notifications (receiver_id, created_at, id);
