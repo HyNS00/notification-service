@@ -5,6 +5,7 @@ import com.hyso.notifier.application.notification.RegisterNotificationResult;
 import com.hyso.notifier.domain.notification.NotificationChannel;
 import com.hyso.notifier.domain.notification.NotificationType;
 import com.hyso.notifier.infrastructure.notification.exception.NotificationNotFoundException;
+import com.hyso.notifier.presentation.notification.dto.response.NotificationListResponse;
 import com.hyso.notifier.presentation.notification.dto.response.NotificationResponse;
 import com.hyso.notifier.presentation.notification.dto.response.NotificationStatus;
 import org.junit.jupiter.api.DisplayNameGeneration;
@@ -17,10 +18,13 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -231,6 +235,93 @@ class NotificationControllerTest {
                   "refId": 100
                 }
                 """;
+    }
+
+    @Test
+    void 목록을_조회하면_200과_items를_반환한다() throws Exception {
+        given(notificationService.findList(any(), any(), anyInt()))
+                .willReturn(new NotificationListResponse(List.of(sentResponse())));
+
+        mockMvc.perform(get("/api/notifications").header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(42))
+                .andExpect(jsonPath("$.items[0].status").value("SENT"));
+    }
+
+    @Test
+    void 목록_조회시_read_파라미터가_없으면_null로_서비스를_호출한다() throws Exception {
+        given(notificationService.findList(any(), any(), anyInt()))
+                .willReturn(new NotificationListResponse(List.of()));
+
+        mockMvc.perform(get("/api/notifications").header("X-User-Id", "1"))
+                .andExpect(status().isOk());
+
+        verify(notificationService).findList(1L, null, 20);
+    }
+
+    @Test
+    void 목록_조회시_read_true면_true로_서비스를_호출한다() throws Exception {
+        given(notificationService.findList(any(), any(), anyInt()))
+                .willReturn(new NotificationListResponse(List.of()));
+
+        mockMvc.perform(get("/api/notifications").header("X-User-Id", "1").param("read", "true"))
+                .andExpect(status().isOk());
+
+        verify(notificationService).findList(1L, true, 20);
+    }
+
+    @Test
+    void 목록_조회시_read_false면_false로_서비스를_호출한다() throws Exception {
+        given(notificationService.findList(any(), any(), anyInt()))
+                .willReturn(new NotificationListResponse(List.of()));
+
+        mockMvc.perform(get("/api/notifications").header("X-User-Id", "1").param("read", "false"))
+                .andExpect(status().isOk());
+
+        verify(notificationService).findList(1L, false, 20);
+    }
+
+    @Test
+    void 목록_조회시_limit이_없으면_기본값_20으로_서비스를_호출한다() throws Exception {
+        given(notificationService.findList(any(), any(), anyInt()))
+                .willReturn(new NotificationListResponse(List.of()));
+
+        mockMvc.perform(get("/api/notifications").header("X-User-Id", "1"))
+                .andExpect(status().isOk());
+
+        verify(notificationService).findList(1L, null, 20);
+    }
+
+    @Test
+    void 목록_조회시_limit이_0이면_400과_INVALID_INPUT을_반환한다() throws Exception {
+        mockMvc.perform(get("/api/notifications").header("X-User-Id", "1").param("limit", "0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("INVALID_INPUT"))
+                .andExpect(jsonPath("$.message").value("limit 은 1 이상이어야 합니다."));
+    }
+
+    @Test
+    void 목록_조회시_limit이_101이면_400과_INVALID_INPUT을_반환한다() throws Exception {
+        mockMvc.perform(get("/api/notifications").header("X-User-Id", "1").param("limit", "101"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("INVALID_INPUT"))
+                .andExpect(jsonPath("$.message").value("limit 은 100 을 넘을 수 없습니다."));
+    }
+
+    @Test
+    void 목록_조회시_limit이_숫자가_아니면_400과_INVALID_INPUT을_반환한다() throws Exception {
+        mockMvc.perform(get("/api/notifications").header("X-User-Id", "1").param("limit", "abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("INVALID_INPUT"))
+                .andExpect(jsonPath("$.message").value("요청 값의 형식이 올바르지 않습니다."));
+    }
+
+    @Test
+    void 목록_조회시_X_User_Id가_없으면_400과_INVALID_INPUT을_반환한다() throws Exception {
+        mockMvc.perform(get("/api/notifications"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("INVALID_INPUT"))
+                .andExpect(jsonPath("$.message").value("사용자 식별 헤더가 비어 있을 수 없습니다."));
     }
 
     private NotificationResponse sentResponse() {
