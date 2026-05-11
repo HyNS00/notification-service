@@ -3,11 +3,13 @@ services:
     image: mysql:8.4
     container_name: notifier-mysql
     restart: unless-stopped
+    command: --default-time-zone=+09:00
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: notifier
       MYSQL_USER: notifier
       MYSQL_PASSWORD: notifier
+      TZ: Asia/Seoul
     ports:
       - "${MYSQL_HOST_PORT:-3306}:3306"
     volumes:
@@ -23,7 +25,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: notifier-app
     restart: unless-stopped
     depends_on:
       mysql:
@@ -33,8 +34,10 @@ services:
       DB_URL: jdbc:mysql://mysql:3306/notifier?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
       DB_USERNAME: notifier
       DB_PASSWORD: notifier
+      TZ: Asia/Seoul
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Seoul
     ports:
-      - "8080:8080"
+      - "8080-8089:8080"
 
 volumes:
   mysql-data:
