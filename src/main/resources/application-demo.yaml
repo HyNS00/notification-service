@@ -1,0 +1,7 @@
+spring:
+  sql:
+    init:
+      mode: always
+      data-locations: classpath:db/demo/data.sql
+  jpa:
+    defer-datasource-initialization: true
