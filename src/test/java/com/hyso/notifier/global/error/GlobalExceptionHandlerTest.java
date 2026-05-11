@@ -80,18 +80,6 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void InvalidChannelForReadException은_INVALID_CHANNEL_FOR_READ로_응답한다() {
-        ResponseEntity<Object> actual = handler.handleInvalidChannelForReadException();
-
-        assertAll(
-                () -> assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST),
-                () -> assertThat(actual.getBody()).isEqualTo(
-                        new ExceptionResponse("INVALID_CHANNEL_FOR_READ", "이 채널의 알림은 읽음 처리할 수 없습니다.")
-                )
-        );
-    }
-
-    @Test
     void X_User_Id_헤더가_누락되면_사용자_식별_헤더_메시지로_응답한다() {
         MissingRequestHeaderException exception = mock(MissingRequestHeaderException.class);
         given(exception.getHeaderName()).willReturn("X-User-Id");

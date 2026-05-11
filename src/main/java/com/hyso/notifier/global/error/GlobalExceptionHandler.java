@@ -1,7 +1,6 @@
 package com.hyso.notifier.global.error;
 
 import com.hyso.notifier.application.notification.outbox.exception.UnsupportedDispatchChannelException;
-import com.hyso.notifier.infrastructure.notification.exception.InvalidChannelForReadException;
 import com.hyso.notifier.infrastructure.notification.exception.NotificationNotFoundException;
 import com.hyso.notifier.infrastructure.notification.exception.OrphanedDuplicateException;
 import org.springframework.http.HttpHeaders;
@@ -81,11 +80,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(NotificationNotFoundException.class)
     public ResponseEntity<Object> handleNotificationNotFoundException() {
         return createResponseEntity(NotificationErrorCode.NOTIFICATION_NOT_FOUND);
-    }
-
-    @ExceptionHandler(InvalidChannelForReadException.class)
-    public ResponseEntity<Object> handleInvalidChannelForReadException() {
-        return createResponseEntity(NotificationErrorCode.INVALID_CHANNEL_FOR_READ);
     }
 
     @ExceptionHandler(MissingRequestHeaderException.class)
