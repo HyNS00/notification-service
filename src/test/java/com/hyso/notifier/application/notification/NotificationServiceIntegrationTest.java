@@ -5,13 +5,18 @@ import com.hyso.notifier.domain.notification.Notification;
 import com.hyso.notifier.domain.notification.NotificationChannel;
 import com.hyso.notifier.domain.notification.NotificationType;
 import com.hyso.notifier.domain.notification.repository.NotificationRepository;
+import com.hyso.notifier.infrastructure.notification.exception.NotificationNotFoundException;
 import com.hyso.notifier.presentation.notification.dto.request.CreateNotificationRequest;
+import com.hyso.notifier.presentation.notification.dto.response.NotificationResponse;
+import com.hyso.notifier.presentation.notification.dto.response.NotificationStatus;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.jdbc.Sql;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
 @IntegrationTest
@@ -60,6 +65,32 @@ class NotificationServiceIntegrationTest {
                 () -> assertThat(second.id()).isEqualTo(first.id()),
                 () -> assertThat(second.created()).isFalse()
         );
+    }
+
+    @Sql("/sql/notification/insert_notifications_for_paging.sql")
+    @Test
+    void 본인_소유_알림을_조회하면_DB_값과_일치하는_응답을_반환한다() {
+        NotificationResponse actual = notificationService.findOne(1L, 1L);
+
+        assertAll(
+                () -> assertThat(actual.id()).isEqualTo(1L),
+                () -> assertThat(actual.type()).isEqualTo(NotificationType.ENROLLMENT_COMPLETED),
+                () -> assertThat(actual.channel()).isEqualTo(NotificationChannel.IN_APP),
+                () -> assertThat(actual.refType()).isEqualTo("ENROLLMENT"),
+                () -> assertThat(actual.refId()).isEqualTo(100L),
+                () -> assertThat(actual.body()).isEqualTo("수강 신청이 완료되었습니다."),
+                () -> assertThat(actual.status()).isEqualTo(NotificationStatus.PENDING),
+                () -> assertThat(actual.sentAt()).isNull(),
+                () -> assertThat(actual.failedAt()).isNull(),
+                () -> assertThat(actual.readAt()).isNull()
+        );
+    }
+
+    @Sql("/sql/notification/insert_notifications_for_paging.sql")
+    @Test
+    void 타인_소유_알림을_조회하면_NotificationNotFoundException을_던진다() {
+        assertThatThrownBy(() -> notificationService.findOne(1L, 6L))
+                .isInstanceOf(NotificationNotFoundException.class);
     }
 
     private CreateNotificationRequest request() {

@@ -3,9 +3,12 @@ package com.hyso.notifier.application.notification;
 import com.hyso.notifier.domain.notification.Notification;
 import com.hyso.notifier.domain.notification.repository.NotificationRepository;
 import com.hyso.notifier.domain.notification.repository.NotificationSaveResult;
+import com.hyso.notifier.infrastructure.notification.exception.NotificationNotFoundException;
 import com.hyso.notifier.presentation.notification.dto.request.CreateNotificationRequest;
+import com.hyso.notifier.presentation.notification.dto.response.NotificationResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -27,6 +30,13 @@ public class NotificationService {
 
         NotificationSaveResult result = notificationRepository.saveOrFind(notification);
         return new RegisterNotificationResult(result.notification().getId(), result.created());
+    }
+
+    @Transactional(readOnly = true)
+    public NotificationResponse findOne(Long userId, Long notificationId) {
+        return notificationRepository.findByIdAndReceiverId(notificationId, userId)
+                .map(notification -> NotificationResponse.from(notification))
+                .orElseThrow(() -> new NotificationNotFoundException(notificationId));
     }
 
     private String createIdempotencyKey(CreateNotificationRequest request) {
