@@ -5,6 +5,7 @@ import com.hyso.notifier.domain.notification.Notification;
 import com.hyso.notifier.domain.notification.NotificationChannel;
 import com.hyso.notifier.domain.notification.NotificationType;
 import com.hyso.notifier.domain.notification.repository.NotificationSaveResult;
+import com.hyso.notifier.domain.notification.repository.ReadFilter;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -125,6 +127,71 @@ class NotificationRepositoryAdapterTest {
                 () -> assertThat(updated.getFailureReason()).isEqualTo(reason),
                 () -> assertThat(updated.getSentAt()).isNull()
         );
+    }
+
+    @Sql("/sql/notification/insert_notifications_for_paging.sql")
+    @Test
+    void findByIdAndReceiverId_는_본인_소유면_알림을_반환한다() {
+        Optional<Notification> actual = notificationRepositoryAdapter.findByIdAndReceiverId(1L, 1L);
+
+        assertThat(actual).isPresent();
+        assertThat(actual.get().getId()).isEqualTo(1L);
+    }
+
+    @Sql("/sql/notification/insert_notifications_for_paging.sql")
+    @Test
+    void findByIdAndReceiverId_는_타인_소유면_빈_Optional을_반환한다() {
+        Optional<Notification> actual = notificationRepositoryAdapter.findByIdAndReceiverId(6L, 1L);
+
+        assertThat(actual).isEmpty();
+    }
+
+    @Sql("/sql/notification/insert_notifications_for_paging.sql")
+    @Test
+    void findByIdAndReceiverId_는_존재하지_않으면_빈_Optional을_반환한다() {
+        Optional<Notification> actual = notificationRepositoryAdapter.findByIdAndReceiverId(999L, 1L);
+
+        assertThat(actual).isEmpty();
+    }
+
+    @Sql("/sql/notification/insert_notifications_for_paging.sql")
+    @Test
+    void findPage_는_최신순으로_limit개를_반환한다() {
+        List<Notification> actual = notificationRepositoryAdapter.findPage(1L, ReadFilter.ALL, 3);
+
+        assertThat(actual).extracting(Notification::getId).containsExactly(5L, 4L, 3L);
+    }
+
+    @Sql("/sql/notification/insert_notifications_for_paging.sql")
+    @Test
+    void findPage_READ_필터는_읽은_알림만_반환한다() {
+        List<Notification> actual = notificationRepositoryAdapter.findPage(1L, ReadFilter.READ, 10);
+
+        assertThat(actual).extracting(Notification::getId).containsExactly(2L);
+    }
+
+    @Sql("/sql/notification/insert_notifications_for_paging.sql")
+    @Test
+    void findPage_UNREAD_필터는_읽지_않은_알림만_반환한다() {
+        List<Notification> actual = notificationRepositoryAdapter.findPage(1L, ReadFilter.UNREAD, 10);
+
+        assertThat(actual).extracting(Notification::getId).containsExactly(5L, 4L, 3L, 1L);
+    }
+
+    @Sql("/sql/notification/insert_notifications_for_paging.sql")
+    @Test
+    void findPage_ALL_필터는_읽음_여부_무관하게_반환한다() {
+        List<Notification> actual = notificationRepositoryAdapter.findPage(1L, ReadFilter.ALL, 10);
+
+        assertThat(actual).extracting(Notification::getId).containsExactly(5L, 4L, 3L, 2L, 1L);
+    }
+
+    @Sql("/sql/notification/insert_notifications_for_paging.sql")
+    @Test
+    void findPage_는_타인_소유_알림을_반환하지_않는다() {
+        List<Notification> actual = notificationRepositoryAdapter.findPage(1L, ReadFilter.ALL, 100);
+
+        assertThat(actual).extracting(Notification::getId).doesNotContain(6L, 7L);
     }
 
     private Notification notification(String idempotencyKey) {
