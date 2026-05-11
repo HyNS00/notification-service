@@ -2,6 +2,11 @@ package com.hyso.notifier.presentation.notification;
 
 import com.hyso.notifier.application.notification.NotificationService;
 import com.hyso.notifier.application.notification.RegisterNotificationResult;
+import com.hyso.notifier.domain.notification.NotificationChannel;
+import com.hyso.notifier.domain.notification.NotificationType;
+import com.hyso.notifier.infrastructure.notification.exception.NotificationNotFoundException;
+import com.hyso.notifier.presentation.notification.dto.response.NotificationResponse;
+import com.hyso.notifier.presentation.notification.dto.response.NotificationStatus;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Test;
@@ -11,8 +16,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDateTime;
+
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -131,6 +140,87 @@ class NotificationControllerTest {
                 .andExpect(jsonPath("$.message").value("요청 본문을 해석할 수 없습니다."));
     }
 
+    @Test
+    void 본인_소유_알림을_조회하면_200과_응답_DTO를_반환한다() throws Exception {
+        given(notificationService.findOne(eq(1L), eq(42L))).willReturn(sentResponse());
+
+        mockMvc.perform(get("/api/notifications/42").header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(42))
+                .andExpect(jsonPath("$.type").value("ENROLLMENT_COMPLETED"))
+                .andExpect(jsonPath("$.channel").value("IN_APP"))
+                .andExpect(jsonPath("$.refType").value("ENROLLMENT"))
+                .andExpect(jsonPath("$.refId").value(100))
+                .andExpect(jsonPath("$.body").value("수강 신청이 완료되었습니다."))
+                .andExpect(jsonPath("$.status").value("SENT"))
+                .andExpect(jsonPath("$.sentAt").exists())
+                .andExpect(jsonPath("$.createdAt").exists());
+    }
+
+    @Test
+    void sentAt만_있으면_status가_SENT로_내려온다() throws Exception {
+        given(notificationService.findOne(any(), any())).willReturn(sentResponse());
+
+        mockMvc.perform(get("/api/notifications/42").header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SENT"));
+    }
+
+    @Test
+    void failedAt만_있으면_status가_FAILED로_내려온다() throws Exception {
+        given(notificationService.findOne(any(), any())).willReturn(failedResponse());
+
+        mockMvc.perform(get("/api/notifications/42").header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("FAILED"))
+                .andExpect(jsonPath("$.failureReason").value("smtp connection refused"));
+    }
+
+    @Test
+    void sentAt도_failedAt도_없으면_status가_PENDING으로_내려온다() throws Exception {
+        given(notificationService.findOne(any(), any())).willReturn(pendingResponse());
+
+        mockMvc.perform(get("/api/notifications/42").header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PENDING"));
+    }
+
+    @Test
+    void 존재하지_않거나_타인_소유면_404와_NOTIFICATION_NOT_FOUND를_반환한다() throws Exception {
+        given(notificationService.findOne(any(), any()))
+                .willThrow(new NotificationNotFoundException(42L));
+
+        mockMvc.perform(get("/api/notifications/42").header("X-User-Id", "1"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errorCode").value("NOTIFICATION_NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("알림을 찾을 수 없습니다."));
+    }
+
+    @Test
+    void X_User_Id_헤더가_없으면_400과_INVALID_INPUT을_반환한다() throws Exception {
+        mockMvc.perform(get("/api/notifications/42"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("INVALID_INPUT"))
+                .andExpect(jsonPath("$.message").value("사용자 식별 헤더가 비어 있을 수 없습니다."));
+    }
+
+    @Test
+    void X_User_Id가_숫자가_아니면_400과_INVALID_INPUT을_반환한다() throws Exception {
+        mockMvc.perform(get("/api/notifications/42").header("X-User-Id", "abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("INVALID_INPUT"))
+                .andExpect(jsonPath("$.message").value("요청 값의 형식이 올바르지 않습니다."));
+    }
+
+    @Test
+    void 응답에_receiverId는_노출되지_않는다() throws Exception {
+        given(notificationService.findOne(any(), any())).willReturn(sentResponse());
+
+        mockMvc.perform(get("/api/notifications/42").header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.receiverId").doesNotExist());
+    }
+
     private String validRequestJson() {
         return """
                 {
@@ -141,5 +231,56 @@ class NotificationControllerTest {
                   "refId": 100
                 }
                 """;
+    }
+
+    private NotificationResponse sentResponse() {
+        return new NotificationResponse(
+                42L,
+                NotificationType.ENROLLMENT_COMPLETED,
+                NotificationChannel.IN_APP,
+                "ENROLLMENT",
+                100L,
+                "수강 신청이 완료되었습니다.",
+                NotificationStatus.SENT,
+                LocalDateTime.of(2026, 5, 10, 12, 0),
+                null,
+                null,
+                null,
+                LocalDateTime.of(2026, 5, 9, 10, 0)
+        );
+    }
+
+    private NotificationResponse failedResponse() {
+        return new NotificationResponse(
+                42L,
+                NotificationType.ENROLLMENT_COMPLETED,
+                NotificationChannel.EMAIL,
+                "ENROLLMENT",
+                100L,
+                "수강 신청이 완료되었습니다.",
+                NotificationStatus.FAILED,
+                null,
+                LocalDateTime.of(2026, 5, 10, 12, 0),
+                "smtp connection refused",
+                null,
+                LocalDateTime.of(2026, 5, 9, 10, 0)
+        );
+    }
+
+    private NotificationResponse pendingResponse() {
+        return new NotificationResponse(
+                42L,
+                NotificationType.ENROLLMENT_COMPLETED,
+                NotificationChannel.IN_APP,
+                "ENROLLMENT",
+                100L,
+                "수강 신청이 완료되었습니다.",
+                NotificationStatus.PENDING,
+                null,
+                null,
+                null,
+                null,
+                LocalDateTime.of(2026, 5, 9, 10, 0)
+        );
     }
 }
