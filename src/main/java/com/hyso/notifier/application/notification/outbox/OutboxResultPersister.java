@@ -19,7 +19,6 @@ public class OutboxResultPersister {
 
     @Transactional
     public boolean persist(NotificationOutbox outbox, LocalDateTime claimedProcessingStartedAt) {
-        validate(outbox, claimedProcessingStartedAt);
         boolean savedOutbox = notificationOutboxRepository.saveIfLeaseMatched(outbox, claimedProcessingStartedAt);
         if (!savedOutbox) {
             return false;
@@ -40,23 +39,6 @@ public class OutboxResultPersister {
                     outbox.getFailedAt(),
                     outbox.getFailureReason()
             );
-        }
-    }
-
-    private static void validate(NotificationOutbox outbox, LocalDateTime claimedProcessingStartedAt) {
-        validateOutbox(outbox);
-        validateClaimedProcessingStartedAt(claimedProcessingStartedAt);
-    }
-
-    private static void validateOutbox(NotificationOutbox outbox) {
-        if (outbox == null) {
-            throw new IllegalArgumentException("outbox 는 비어 있을 수 없습니다.");
-        }
-    }
-
-    private static void validateClaimedProcessingStartedAt(LocalDateTime claimedProcessingStartedAt) {
-        if (claimedProcessingStartedAt == null) {
-            throw new IllegalArgumentException("claim 시각은 비어 있을 수 없습니다.");
         }
     }
 }

@@ -1,7 +1,9 @@
 package com.hyso.notifier.global.error;
 
 import com.hyso.notifier.application.notification.outbox.exception.UnsupportedDispatchChannelException;
+import com.hyso.notifier.infrastructure.notification.exception.NotificationNotFoundException;
 import com.hyso.notifier.infrastructure.notification.exception.OrphanedDuplicateException;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -9,9 +11,11 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 @RestControllerAdvice
@@ -72,6 +76,33 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(UnsupportedDispatchChannelException.class)
     public ResponseEntity<Object> handleUnsupportedDispatchChannelException() {
         return createResponseEntity(NotificationErrorCode.UNSUPPORTED_DISPATCH_CHANNEL);
+    }
+
+    @ExceptionHandler(NotificationNotFoundException.class)
+    public ResponseEntity<Object> handleNotificationNotFoundException() {
+        return createResponseEntity(NotificationErrorCode.NOTIFICATION_NOT_FOUND);
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<Object> handleMissingRequestHeaderException(MissingRequestHeaderException exception) {
+        String message = "X-User-Id".equalsIgnoreCase(exception.getHeaderName())
+                ? "사용자 식별 헤더가 비어 있을 수 없습니다."
+                : "필수 헤더가 누락되었습니다.";
+        return createResponseEntity(CommonErrorCode.INVALID_INPUT, message);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Object> handleMethodArgumentTypeMismatchException() {
+        return createResponseEntity(CommonErrorCode.INVALID_INPUT, "요청 값의 형식이 올바르지 않습니다.");
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Object> handleConstraintViolationException(ConstraintViolationException exception) {
+        String message = exception.getConstraintViolations().stream()
+                .findFirst()
+                .map(violation -> violation.getMessage())
+                .orElse(CommonErrorCode.INVALID_INPUT.getMessage());
+        return createResponseEntity(CommonErrorCode.INVALID_INPUT, message);
     }
 
     @ExceptionHandler(IllegalStateException.class)

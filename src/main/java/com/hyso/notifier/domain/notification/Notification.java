@@ -7,6 +7,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
@@ -20,6 +21,9 @@ import java.time.LocalDateTime;
         name = "notifications",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_notifications_idem", columnNames = "idempotency_key")
+        },
+        indexes = {
+                @Index(name = "idx_notification_receiver_created", columnList = "receiver_id, created_at, id")
         }
 )
 @Getter

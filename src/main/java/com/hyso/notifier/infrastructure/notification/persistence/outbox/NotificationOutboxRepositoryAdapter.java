@@ -40,7 +40,6 @@ public class NotificationOutboxRepositoryAdapter implements NotificationOutboxRe
     @Override
     @Transactional
     public boolean saveIfLeaseMatched(NotificationOutbox outbox, LocalDateTime claimedProcessingStartedAt) {
-        validate(outbox, claimedProcessingStartedAt);
         int updated = jpaNotificationOutboxRepository.updateIfLeaseMatched(
                 outbox.getId(),
                 claimedProcessingStartedAt,
@@ -56,46 +55,15 @@ public class NotificationOutboxRepositoryAdapter implements NotificationOutboxRe
         return updated == 1;
     }
 
-    private static void validate(NotificationOutbox outbox, LocalDateTime claimedProcessingStartedAt) {
-        validateOutbox(outbox);
-        validateClaimedProcessingStartedAt(claimedProcessingStartedAt);
-    }
-
-    private static void validateOutbox(NotificationOutbox outbox) {
-        if (outbox == null) {
-            throw new IllegalArgumentException("저장하려는 outbox 는 비어 있을 수 없습니다.");
-        }
-        if (outbox.getId() == null) {
-            throw new IllegalArgumentException("저장하려는 outbox 의 id 는 비어 있을 수 없습니다.");
-        }
-    }
-
-    private static void validateClaimedProcessingStartedAt(LocalDateTime claimedProcessingStartedAt) {
-        if (claimedProcessingStartedAt == null) {
-            throw new IllegalArgumentException("claim 시각은 비어 있을 수 없습니다.");
-        }
-    }
-
     @Override
     @Transactional
     public int deleteSentOlderThan(LocalDateTime cutoff, int batchSize) {
-        validateCleanupArgs(cutoff, batchSize);
         return jpaNotificationOutboxRepository.deleteSentOlderThan(cutoff, batchSize);
     }
 
     @Override
     @Transactional
     public int deleteFailedOlderThan(LocalDateTime cutoff, int batchSize) {
-        validateCleanupArgs(cutoff, batchSize);
         return jpaNotificationOutboxRepository.deleteFailedOlderThan(cutoff, batchSize);
-    }
-
-    private static void validateCleanupArgs(LocalDateTime cutoff, int batchSize) {
-        if (cutoff == null) {
-            throw new IllegalArgumentException("cleanup cutoff 시각은 비어 있을 수 없습니다.");
-        }
-        if (batchSize < 1) {
-            throw new IllegalArgumentException("cleanup batch 크기는 1 이상이어야 합니다.");
-        }
     }
 }
