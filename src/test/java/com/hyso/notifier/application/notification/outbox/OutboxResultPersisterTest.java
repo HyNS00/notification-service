@@ -36,9 +36,9 @@ class OutboxResultPersisterTest {
     OutboxResultPersister persister;
 
     @Test
-    void outbox_저장_성공_후_SENT_이면_notification_도_markSent_된다() {
+    void outbox_저장_성공_후_DISPATCHED_이면_notification_도_markSent_된다() {
         NotificationOutbox outbox = OutboxFixtures.processingAtAttempt(99L, FIXED_NOW.minusMinutes(10), FIXED_NOW, 1);
-        outbox.markSent(FIXED_NOW);
+        outbox.markDispatched(FIXED_NOW);
         given(notificationOutboxRepository.saveIfLeaseMatched(eq(outbox), eq(FIXED_NOW))).willReturn(true);
 
         boolean result = persister.persist(outbox, FIXED_NOW);
@@ -75,7 +75,7 @@ class OutboxResultPersisterTest {
     @Test
     void lease_가_유실되어_outbox_저장이_실패하면_notification_은_갱신되지_않고_false_를_반환한다() {
         NotificationOutbox outbox = OutboxFixtures.processingAtAttempt(99L, FIXED_NOW.minusMinutes(10), FIXED_NOW, 1);
-        outbox.markSent(FIXED_NOW);
+        outbox.markDispatched(FIXED_NOW);
         given(notificationOutboxRepository.saveIfLeaseMatched(eq(outbox), eq(FIXED_NOW))).willReturn(false);
 
         boolean result = persister.persist(outbox, FIXED_NOW);

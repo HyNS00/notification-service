@@ -26,7 +26,7 @@ outbox:
     fixed-delay-ms: 30000
     batch-size: 100
   cleanup:
-    sent-retention-days: 7
+    dispatched-retention-days: 7
     failed-retention-days: 30
     fixed-delay-ms: 3600000
     batch-size: 500

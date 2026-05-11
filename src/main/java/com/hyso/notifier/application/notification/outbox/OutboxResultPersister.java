@@ -29,8 +29,8 @@ public class OutboxResultPersister {
 
     private void applyToNotification(NotificationOutbox outbox) {
         NotificationOutboxStatus status = outbox.getStatus();
-        if (status == NotificationOutboxStatus.SENT) {
-            notificationRepository.markSent(outbox.getNotificationId(), outbox.getSentAt());
+        if (status == NotificationOutboxStatus.DISPATCHED) {
+            notificationRepository.markSent(outbox.getNotificationId(), outbox.getDispatchedAt());
             return;
         }
         if (status == NotificationOutboxStatus.FAILED) {

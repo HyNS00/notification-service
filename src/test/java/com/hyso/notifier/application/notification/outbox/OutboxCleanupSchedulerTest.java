@@ -25,7 +25,7 @@ import static org.mockito.Mockito.verify;
 class OutboxCleanupSchedulerTest {
 
     private static final LocalDateTime FIXED_NOW = LocalDateTime.of(2026, 5, 11, 12, 0);
-    private static final int SENT_RETENTION_DAYS = 7;
+    private static final int DISPATCHED_RETENTION_DAYS = 7;
     private static final int FAILED_RETENTION_DAYS = 30;
     private static final int BATCH_SIZE = 500;
 
@@ -40,21 +40,21 @@ class OutboxCleanupSchedulerTest {
     @BeforeEach
     void setUp() {
         scheduler = new OutboxCleanupScheduler(notificationOutboxRepository, outboxCleanupProperties, clock);
-        lenient().when(outboxCleanupProperties.sentRetentionDays()).thenReturn(SENT_RETENTION_DAYS);
+        lenient().when(outboxCleanupProperties.dispatchedRetentionDays()).thenReturn(DISPATCHED_RETENTION_DAYS);
         lenient().when(outboxCleanupProperties.failedRetentionDays()).thenReturn(FAILED_RETENTION_DAYS);
         lenient().when(outboxCleanupProperties.batchSize()).thenReturn(BATCH_SIZE);
     }
 
     @Test
-    void cleanup_은_SENT_와_FAILED_각각의_retention_cutoff_로_delete_를_호출한다() {
-        LocalDateTime expectedSentCutoff = FIXED_NOW.minusDays(SENT_RETENTION_DAYS);
+    void cleanup_은_DISPATCHED_와_FAILED_각각의_retention_cutoff_로_delete_를_호출한다() {
+        LocalDateTime expectedDispatchedCutoff = FIXED_NOW.minusDays(DISPATCHED_RETENTION_DAYS);
         LocalDateTime expectedFailedCutoff = FIXED_NOW.minusDays(FAILED_RETENTION_DAYS);
-        given(notificationOutboxRepository.deleteSentOlderThan(eq(expectedSentCutoff), eq(BATCH_SIZE))).willReturn(0);
+        given(notificationOutboxRepository.deleteDispatchedOlderThan(eq(expectedDispatchedCutoff), eq(BATCH_SIZE))).willReturn(0);
         given(notificationOutboxRepository.deleteFailedOlderThan(eq(expectedFailedCutoff), eq(BATCH_SIZE))).willReturn(0);
 
         scheduler.cleanup();
 
-        verify(notificationOutboxRepository).deleteSentOlderThan(expectedSentCutoff, BATCH_SIZE);
+        verify(notificationOutboxRepository).deleteDispatchedOlderThan(expectedDispatchedCutoff, BATCH_SIZE);
         verify(notificationOutboxRepository).deleteFailedOlderThan(expectedFailedCutoff, BATCH_SIZE);
     }
 }

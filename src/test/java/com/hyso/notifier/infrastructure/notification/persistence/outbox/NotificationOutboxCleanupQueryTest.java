@@ -29,8 +29,8 @@ class NotificationOutboxCleanupQueryTest {
 
     @Test
     @Sql("/sql/outbox/cleanup_candidates.sql")
-    void deleteSentOlderThan_은_cutoff_보다_오래된_SENT_행만_삭제하고_다른_상태와_최근_SENT_는_보존한다() {
-        int deleted = notificationOutboxRepository.deleteSentOlderThan(CUTOFF, 100);
+    void deleteDispatchedOlderThan_은_cutoff_보다_오래된_DISPATCHED_행만_삭제하고_다른_상태와_최근_DISPATCHED_는_보존한다() {
+        int deleted = notificationOutboxRepository.deleteDispatchedOlderThan(CUTOFF, 100);
 
         List<NotificationOutbox> remaining = jpaNotificationOutboxRepository.findAll();
         assertThat(deleted).isEqualTo(1);
@@ -53,10 +53,10 @@ class NotificationOutboxCleanupQueryTest {
 
     @Test
     @Sql("/sql/outbox/cleanup_candidates.sql")
-    void deleteSentOlderThan_은_batchSize_보다_많이_삭제하지_않는다() {
+    void deleteDispatchedOlderThan_은_batchSize_보다_많이_삭제하지_않는다() {
         LocalDateTime farFuture = LocalDateTime.of(2030, 1, 1, 0, 0);
 
-        int deleted = notificationOutboxRepository.deleteSentOlderThan(farFuture, 1);
+        int deleted = notificationOutboxRepository.deleteDispatchedOlderThan(farFuture, 1);
 
         assertThat(deleted).isEqualTo(1);
         List<NotificationOutbox> remaining = jpaNotificationOutboxRepository.findAll();

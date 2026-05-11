@@ -3,7 +3,7 @@ package com.hyso.notifier.domain.notification.outbox;
 public enum NotificationOutboxStatus {
     PENDING,
     PROCESSING,
-    SENT,
+    DISPATCHED,
     RETRY_PENDING,
     FAILED
 }

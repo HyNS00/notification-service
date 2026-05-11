@@ -51,7 +51,7 @@ public class OutboxProcessor {
         NotificationOutbox outbox = claimed.outbox();
         boolean dispatched = tryDispatch(outbox);
         if (dispatched) {
-            outbox.markSent(LocalDateTime.now(clock));
+            outbox.markDispatched(LocalDateTime.now(clock));
         }
         boolean persisted = outboxResultPersister.persist(outbox, claimed.claimedProcessingStartedAt());
         if (!persisted) {

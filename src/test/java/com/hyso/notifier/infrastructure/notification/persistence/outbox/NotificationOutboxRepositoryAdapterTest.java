@@ -46,7 +46,7 @@ class NotificationOutboxRepositoryAdapterTest {
                 () -> assertThat(actual.getChannel()).isEqualTo(NotificationChannel.EMAIL),
                 () -> assertThat(actual.getBody()).isEqualTo("수강 신청이 완료되었습니다."),
                 () -> assertThat(actual.getFailureReason()).isNull(),
-                () -> assertThat(actual.getSentAt()).isNull(),
+                () -> assertThat(actual.getDispatchedAt()).isNull(),
                 () -> assertThat(actual.getFailedAt()).isNull(),
                 () -> assertThat(actual.getCreatedAt()).isEqualTo(CREATED_AT),
                 () -> assertThat(actual.getUpdatedAt()).isEqualTo(CREATED_AT)

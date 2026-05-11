@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 class NotificationOutboxLeaseUpdateTest {
 
     private static final LocalDateTime CLAIMED_AT = LocalDateTime.of(2026, 5, 10, 12, 0);
-    private static final LocalDateTime SENT_AT = CLAIMED_AT.plusSeconds(3);
+    private static final LocalDateTime DISPATCHED_AT = CLAIMED_AT.plusSeconds(3);
 
     @Autowired
     NotificationOutboxRepository notificationOutboxRepository;
@@ -34,15 +34,15 @@ class NotificationOutboxLeaseUpdateTest {
     @Sql("/sql/outbox/lease_match_candidate.sql")
     void claim_시각이_DB의_lease_와_일치하면_결과_저장이_적용되고_true_를_반환한다() {
         NotificationOutbox outbox = jpaNotificationOutboxRepository.findById(1L).orElseThrow();
-        outbox.markSent(SENT_AT);
+        outbox.markDispatched(DISPATCHED_AT);
 
         boolean updated = notificationOutboxRepository.saveIfLeaseMatched(outbox, CLAIMED_AT);
 
         NotificationOutbox after = jpaNotificationOutboxRepository.findById(1L).orElseThrow();
         assertAll(
                 () -> assertThat(updated).isTrue(),
-                () -> assertThat(after.getStatus()).isEqualTo(NotificationOutboxStatus.SENT),
-                () -> assertThat(after.getSentAt()).isEqualTo(SENT_AT),
+                () -> assertThat(after.getStatus()).isEqualTo(NotificationOutboxStatus.DISPATCHED),
+                () -> assertThat(after.getDispatchedAt()).isEqualTo(DISPATCHED_AT),
                 () -> assertThat(after.getProcessingLeaseState()).isEqualTo(NotificationOutboxLeaseState.IDLE),
                 () -> assertThat(after.getProcessingStartedAt()).isNull()
         );
@@ -52,7 +52,7 @@ class NotificationOutboxLeaseUpdateTest {
     @Sql("/sql/outbox/lease_match_candidate.sql")
     void claim_시각이_DB의_lease_와_다르면_결과_저장이_거부되고_false_를_반환한다() {
         NotificationOutbox outbox = jpaNotificationOutboxRepository.findById(1L).orElseThrow();
-        outbox.markSent(SENT_AT);
+        outbox.markDispatched(DISPATCHED_AT);
         LocalDateTime mismatchedClaim = CLAIMED_AT.plusMinutes(1);
 
         boolean updated = notificationOutboxRepository.saveIfLeaseMatched(outbox, mismatchedClaim);
@@ -61,7 +61,7 @@ class NotificationOutboxLeaseUpdateTest {
         assertAll(
                 () -> assertThat(updated).isFalse(),
                 () -> assertThat(after.getStatus()).isEqualTo(NotificationOutboxStatus.PROCESSING),
-                () -> assertThat(after.getSentAt()).isNull(),
+                () -> assertThat(after.getDispatchedAt()).isNull(),
                 () -> assertThat(after.getProcessingStartedAt()).isEqualTo(CLAIMED_AT)
         );
     }

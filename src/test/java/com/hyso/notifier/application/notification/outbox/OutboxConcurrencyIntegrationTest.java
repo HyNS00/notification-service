@@ -102,8 +102,8 @@ class OutboxConcurrencyIntegrationTest {
         NotificationOutbox outbox = jpaNotificationOutboxRepository.findById(claimed.get(0).outbox().getId()).orElseThrow();
 
         assertAll(
-                () -> assertThat(outbox.getStatus()).isEqualTo(NotificationOutboxStatus.SENT),
-                () -> assertThat(outbox.getSentAt()).isNotNull(),
+                () -> assertThat(outbox.getStatus()).isEqualTo(NotificationOutboxStatus.DISPATCHED),
+                () -> assertThat(outbox.getDispatchedAt()).isNotNull(),
                 () -> assertThat(notification.getSentAt()).isNotNull(),
                 () -> assertThat(notification.getFailedAt()).isNull(),
                 () -> assertThat(notification.getFailureReason()).isNull()

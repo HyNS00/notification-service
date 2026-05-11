@@ -24,14 +24,14 @@ public class OutboxCleanupScheduler {
         LocalDateTime now = LocalDateTime.now(clock);
         int batchSize = outboxCleanupProperties.batchSize();
 
-        LocalDateTime sentCutoff = now.minusDays(outboxCleanupProperties.sentRetentionDays());
-        int sentDeleted = notificationOutboxRepository.deleteSentOlderThan(sentCutoff, batchSize);
+        LocalDateTime dispatchedCutoff = now.minusDays(outboxCleanupProperties.dispatchedRetentionDays());
+        int dispatchedDeleted = notificationOutboxRepository.deleteDispatchedOlderThan(dispatchedCutoff, batchSize);
 
         LocalDateTime failedCutoff = now.minusDays(outboxCleanupProperties.failedRetentionDays());
         int failedDeleted = notificationOutboxRepository.deleteFailedOlderThan(failedCutoff, batchSize);
 
-        if (sentDeleted > 0 || failedDeleted > 0) {
-            log.info("OutboxCleanup — SENT {} 행, FAILED {} 행 삭제", sentDeleted, failedDeleted);
+        if (dispatchedDeleted > 0 || failedDeleted > 0) {
+            log.info("OutboxCleanup — DISPATCHED {} 행, FAILED {} 행 삭제", dispatchedDeleted, failedDeleted);
         }
     }
 }

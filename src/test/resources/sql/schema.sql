@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS notification_outboxes (
     channel VARCHAR(16) NOT NULL,
     body VARCHAR(500) NOT NULL,
     failure_reason VARCHAR(500),
-    sent_at TIMESTAMP,
+    dispatched_at TIMESTAMP,
     failed_at TIMESTAMP,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,

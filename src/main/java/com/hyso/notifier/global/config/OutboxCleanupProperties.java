@@ -4,7 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties("outbox.cleanup")
 public record OutboxCleanupProperties(
-        int sentRetentionDays,
+        int dispatchedRetentionDays,
         int failedRetentionDays,
         long fixedDelayMs,
         int batchSize

@@ -18,7 +18,7 @@ public interface NotificationOutboxRepository {
 
     boolean saveIfLeaseMatched(NotificationOutbox outbox, LocalDateTime claimedProcessingStartedAt);
 
-    int deleteSentOlderThan(LocalDateTime cutoff, int batchSize);
+    int deleteDispatchedOlderThan(LocalDateTime cutoff, int batchSize);
 
     int deleteFailedOlderThan(LocalDateTime cutoff, int batchSize);
 }

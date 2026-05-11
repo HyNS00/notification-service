@@ -105,15 +105,15 @@ class OutboxProcessorTest {
     }
 
     @Test
-    void dispatchAndPersist_는_dispatch_성공_시_outbox_를_SENT_로_전이한다() {
+    void dispatchAndPersist_는_dispatch_성공_시_outbox_를_DISPATCHED_로_전이한다() {
         ClaimedOutbox claimed = claimedFromPending();
 
         processor.dispatchAndPersist(claimed);
 
         NotificationOutbox outbox = claimed.outbox();
         assertAll(
-                () -> assertThat(outbox.getStatus()).isEqualTo(NotificationOutboxStatus.SENT),
-                () -> assertThat(outbox.getSentAt()).isEqualTo(FIXED_NOW)
+                () -> assertThat(outbox.getStatus()).isEqualTo(NotificationOutboxStatus.DISPATCHED),
+                () -> assertThat(outbox.getDispatchedAt()).isEqualTo(FIXED_NOW)
         );
     }
 
@@ -176,7 +176,7 @@ class OutboxProcessorTest {
 
         processor.dispatchAndPersist(claimed);
 
-        assertThat(claimed.outbox().getStatus()).isEqualTo(NotificationOutboxStatus.SENT);
+        assertThat(claimed.outbox().getStatus()).isEqualTo(NotificationOutboxStatus.DISPATCHED);
     }
 
     private NotificationOutbox pendingOutbox() {

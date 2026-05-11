@@ -56,7 +56,7 @@ public interface JpaNotificationOutboxRepository extends ListCrudRepository<Noti
                         processing_lease_state = :leaseState,
                         processing_started_at = :processingStartedAt,
                         next_attempt_at = :nextAttemptAt,
-                        sent_at = :sentAt,
+                        dispatched_at = :dispatchedAt,
                         failed_at = :failedAt,
                         failure_reason = :failureReason,
                         updated_at = :updatedAt
@@ -74,7 +74,7 @@ public interface JpaNotificationOutboxRepository extends ListCrudRepository<Noti
             @Param("leaseState") String leaseState,
             @Param("processingStartedAt") LocalDateTime processingStartedAt,
             @Param("nextAttemptAt") LocalDateTime nextAttemptAt,
-            @Param("sentAt") LocalDateTime sentAt,
+            @Param("dispatchedAt") LocalDateTime dispatchedAt,
             @Param("failedAt") LocalDateTime failedAt,
             @Param("failureReason") String failureReason,
             @Param("updatedAt") LocalDateTime updatedAt
@@ -84,13 +84,13 @@ public interface JpaNotificationOutboxRepository extends ListCrudRepository<Noti
     @Query(
             value = """
                     DELETE FROM notification_outboxes
-                    WHERE status = 'SENT'
-                      AND sent_at < :cutoff
+                    WHERE status = 'DISPATCHED'
+                      AND dispatched_at < :cutoff
                     LIMIT :batchSize
                     """,
             nativeQuery = true
     )
-    int deleteSentOlderThan(@Param("cutoff") LocalDateTime cutoff, @Param("batchSize") int batchSize);
+    int deleteDispatchedOlderThan(@Param("cutoff") LocalDateTime cutoff, @Param("batchSize") int batchSize);
 
     @Modifying(clearAutomatically = true)
     @Query(

@@ -72,8 +72,8 @@ public class NotificationOutbox {
     @Column(name = "failure_reason", length = 500)
     private String failureReason;
 
-    @Column(name = "sent_at")
-    private LocalDateTime sentAt;
+    @Column(name = "dispatched_at")
+    private LocalDateTime dispatchedAt;
 
     @Column(name = "failed_at")
     private LocalDateTime failedAt;
@@ -131,19 +131,19 @@ public class NotificationOutbox {
         this.updatedAt = now;
     }
 
-    public void markSent(LocalDateTime sentAt) {
-        if (sentAt == null) {
-            throw new IllegalArgumentException("발송 완료 시각은 비어 있을 수 없습니다.");
+    public void markDispatched(LocalDateTime dispatchedAt) {
+        if (dispatchedAt == null) {
+            throw new IllegalArgumentException("발송 위임 완료 시각은 비어 있을 수 없습니다.");
         }
         requireProcessing();
-        this.status = NotificationOutboxStatus.SENT;
+        this.status = NotificationOutboxStatus.DISPATCHED;
         this.processingLeaseState = NotificationOutboxLeaseState.IDLE;
         this.processingStartedAt = null;
-        this.sentAt = sentAt;
+        this.dispatchedAt = dispatchedAt;
         this.failedAt = null;
         this.failureReason = null;
         this.nextAttemptAt = null;
-        this.updatedAt = sentAt;
+        this.updatedAt = dispatchedAt;
     }
 
     public void markRetryPending(LocalDateTime failedAt, String failureReason, LocalDateTime nextAttemptAt) {

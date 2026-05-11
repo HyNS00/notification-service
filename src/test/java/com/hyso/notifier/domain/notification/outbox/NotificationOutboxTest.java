@@ -38,7 +38,7 @@ class NotificationOutboxTest {
                 () -> assertThat(actual.getProcessingLeaseState()).isEqualTo(NotificationOutboxLeaseState.IDLE),
                 () -> assertThat(actual.getProcessingStartedAt()).isNull(),
                 () -> assertThat(actual.getFailureReason()).isNull(),
-                () -> assertThat(actual.getSentAt()).isNull(),
+                () -> assertThat(actual.getDispatchedAt()).isNull(),
                 () -> assertThat(actual.getFailedAt()).isNull(),
                 () -> assertThat(actual.getCreatedAt()).isEqualTo(CREATED_AT),
                 () -> assertThat(actual.getUpdatedAt()).isEqualTo(CREATED_AT)
@@ -225,23 +225,23 @@ class NotificationOutboxTest {
     }
 
     @Test
-    void markSent_는_PROCESSING_을_SENT_로_바꾸고_lease_와_failure_정보를_정리한다() {
+    void markDispatched_는_PROCESSING_을_DISPATCHED_로_바꾸고_lease_와_failure_정보를_정리한다() {
         NotificationOutbox outbox = pendingOutbox();
         LocalDateTime claimAt = LocalDateTime.of(2026, 5, 10, 12, 0);
-        LocalDateTime sentAt = claimAt.plusSeconds(3);
+        LocalDateTime dispatchedAt = claimAt.plusSeconds(3);
         outbox.claim(claimAt);
 
-        outbox.markSent(sentAt);
+        outbox.markDispatched(dispatchedAt);
 
         assertAll(
-                () -> assertThat(outbox.getStatus()).isEqualTo(NotificationOutboxStatus.SENT),
+                () -> assertThat(outbox.getStatus()).isEqualTo(NotificationOutboxStatus.DISPATCHED),
                 () -> assertThat(outbox.getProcessingLeaseState()).isEqualTo(NotificationOutboxLeaseState.IDLE),
                 () -> assertThat(outbox.getProcessingStartedAt()).isNull(),
-                () -> assertThat(outbox.getSentAt()).isEqualTo(sentAt),
+                () -> assertThat(outbox.getDispatchedAt()).isEqualTo(dispatchedAt),
                 () -> assertThat(outbox.getFailedAt()).isNull(),
                 () -> assertThat(outbox.getFailureReason()).isNull(),
                 () -> assertThat(outbox.getNextAttemptAt()).isNull(),
-                () -> assertThat(outbox.getUpdatedAt()).isEqualTo(sentAt)
+                () -> assertThat(outbox.getUpdatedAt()).isEqualTo(dispatchedAt)
         );
     }
 
@@ -292,7 +292,7 @@ class NotificationOutboxTest {
         LocalDateTime now = LocalDateTime.of(2026, 5, 10, 12, 0);
 
         assertAll(
-                () -> assertThatThrownBy(() -> pending.markSent(now))
+                () -> assertThatThrownBy(() -> pending.markDispatched(now))
                         .isInstanceOf(IllegalStateException.class)
                         .hasMessage("PROCESSING 상태에서만 결과를 기록할 수 있습니다."),
                 () -> assertThatThrownBy(() -> pending.markRetryPending(now, "사유", now.plusSeconds(10)))
@@ -313,9 +313,9 @@ class NotificationOutboxTest {
         processing.claim(claimAt);
 
         assertAll(
-                () -> assertThatThrownBy(() -> processing.markSent(null))
+                () -> assertThatThrownBy(() -> processing.markDispatched(null))
                         .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessage("발송 완료 시각은 비어 있을 수 없습니다."),
+                        .hasMessage("발송 위임 완료 시각은 비어 있을 수 없습니다."),
                 () -> assertThatThrownBy(() -> processing.markRetryPending(null, "사유", nextAttempt))
                         .isInstanceOf(IllegalArgumentException.class)
                         .hasMessage("실패 시각은 비어 있을 수 없습니다."),

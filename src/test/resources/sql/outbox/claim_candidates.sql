@@ -30,6 +30,6 @@ INSERT INTO notification_outboxes (
     104, 'EMAIL', '본문 4',
     '2026-05-10 11:00:00', '2026-05-10 11:31:00'),
 (5, 5, '21b5e8a3f6c9d2e5b8a1f4c7d0e3b6a9c2f5d8e1b4a7c0f3d6e9b2a5c8f1d4e7',
-    'SENT', 1, 'IDLE', '2026-05-10 11:30:00', NULL,
+    'DISPATCHED', 1, 'IDLE', '2026-05-10 11:30:00', NULL,
     105, 'EMAIL', '본문 5',
     '2026-05-10 11:00:00', '2026-05-10 11:31:00');

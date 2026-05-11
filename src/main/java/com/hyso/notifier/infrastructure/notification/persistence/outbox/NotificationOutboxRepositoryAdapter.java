@@ -47,7 +47,7 @@ public class NotificationOutboxRepositoryAdapter implements NotificationOutboxRe
                 outbox.getProcessingLeaseState().name(),
                 outbox.getProcessingStartedAt(),
                 outbox.getNextAttemptAt(),
-                outbox.getSentAt(),
+                outbox.getDispatchedAt(),
                 outbox.getFailedAt(),
                 outbox.getFailureReason(),
                 outbox.getUpdatedAt()
@@ -57,8 +57,8 @@ public class NotificationOutboxRepositoryAdapter implements NotificationOutboxRe
 
     @Override
     @Transactional
-    public int deleteSentOlderThan(LocalDateTime cutoff, int batchSize) {
-        return jpaNotificationOutboxRepository.deleteSentOlderThan(cutoff, batchSize);
+    public int deleteDispatchedOlderThan(LocalDateTime cutoff, int batchSize) {
+        return jpaNotificationOutboxRepository.deleteDispatchedOlderThan(cutoff, batchSize);
     }
 
     @Override

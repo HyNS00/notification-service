@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 class OutboxResultPersisterIntegrationTest {
 
     private static final LocalDateTime CLAIMED_AT = LocalDateTime.of(2026, 5, 10, 12, 0);
-    private static final LocalDateTime SENT_AT = CLAIMED_AT.plusSeconds(3);
+    private static final LocalDateTime DISPATCHED_AT = CLAIMED_AT.plusSeconds(3);
     private static final LocalDateTime FAILED_AT = CLAIMED_AT.plusSeconds(2);
 
     @Autowired
@@ -37,9 +37,9 @@ class OutboxResultPersisterIntegrationTest {
 
     @Test
     @Sql({"/sql/notification/insert_notification.sql", "/sql/outbox/lease_match_candidate.sql"})
-    void SENT_시_outbox_와_notification_이_한_트랜잭션에_같이_커밋된다() {
+    void DISPATCHED_시_outbox_와_notification_이_한_트랜잭션에_같이_커밋된다() {
         NotificationOutbox outbox = jpaOutboxRepository.findById(1L).orElseThrow();
-        outbox.markSent(SENT_AT);
+        outbox.markDispatched(DISPATCHED_AT);
 
         boolean result = persister.persist(outbox, CLAIMED_AT);
 
@@ -47,9 +47,9 @@ class OutboxResultPersisterIntegrationTest {
         Notification afterNotification = jpaNotificationRepository.findById(1L).orElseThrow();
         assertAll(
                 () -> assertThat(result).isTrue(),
-                () -> assertThat(afterOutbox.getStatus()).isEqualTo(NotificationOutboxStatus.SENT),
-                () -> assertThat(afterOutbox.getSentAt()).isEqualTo(SENT_AT),
-                () -> assertThat(afterNotification.getSentAt()).isEqualTo(SENT_AT),
+                () -> assertThat(afterOutbox.getStatus()).isEqualTo(NotificationOutboxStatus.DISPATCHED),
+                () -> assertThat(afterOutbox.getDispatchedAt()).isEqualTo(DISPATCHED_AT),
+                () -> assertThat(afterNotification.getSentAt()).isEqualTo(DISPATCHED_AT),
                 () -> assertThat(afterNotification.getFailedAt()).isNull(),
                 () -> assertThat(afterNotification.getFailureReason()).isNull()
         );
@@ -102,7 +102,7 @@ class OutboxResultPersisterIntegrationTest {
     @Sql({"/sql/notification/insert_notification.sql", "/sql/outbox/lease_match_candidate.sql"})
     void lease_가_유실되면_outbox_와_notification_둘_다_무변경이다() {
         NotificationOutbox outbox = jpaOutboxRepository.findById(1L).orElseThrow();
-        outbox.markSent(SENT_AT);
+        outbox.markDispatched(DISPATCHED_AT);
         LocalDateTime mismatchedClaim = CLAIMED_AT.plusMinutes(1);
 
         boolean result = persister.persist(outbox, mismatchedClaim);
@@ -112,7 +112,7 @@ class OutboxResultPersisterIntegrationTest {
         assertAll(
                 () -> assertThat(result).isFalse(),
                 () -> assertThat(afterOutbox.getStatus()).isEqualTo(NotificationOutboxStatus.PROCESSING),
-                () -> assertThat(afterOutbox.getSentAt()).isNull(),
+                () -> assertThat(afterOutbox.getDispatchedAt()).isNull(),
                 () -> assertThat(afterNotification.getSentAt()).isNull(),
                 () -> assertThat(afterNotification.getFailedAt()).isNull(),
                 () -> assertThat(afterNotification.getFailureReason()).isNull()
